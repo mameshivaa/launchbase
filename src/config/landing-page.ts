@@ -2,9 +2,9 @@ export const landingPageConfig = {
   brand: {
     name: "LaunchBase",
     eyebrow: "Supabase-powered launch operations",
-    headline: "A launch OS startups can make their own.",
+    headline: "Build your startup launch OS on Supabase.",
     description:
-      "LaunchBase gives early teams the structure for waitlists, feature requests, voting, roadmap planning, and changelog publishing. Drop in your own product screenshots and run it locally on Supabase.",
+      "LaunchBase gives founders and developers the structure for waitlists, feature requests, voting, roadmap planning, and changelog publishing. Bring your own screenshots, change the copy, and ship with Supabase Auth and RLS already wired.",
   },
   theme: {
     accent: "#3ecf8e",

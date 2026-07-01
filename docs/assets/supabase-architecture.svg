@@ -1,0 +1,59 @@
+<svg width="1440" height="860" viewBox="0 0 1440 860" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">LaunchBase Supabase architecture</title>
+  <desc id="desc">Technical architecture diagram showing how Next.js, Supabase Auth, PostgREST, RLS policies, and Postgres tables work together.</desc>
+  <rect width="1440" height="860" rx="32" fill="#FAFAFA"/>
+  <rect x="64" y="64" width="1312" height="732" rx="28" fill="#FFFFFF" stroke="#E4E4E7"/>
+  <text x="104" y="128" fill="#111827" font-family="Inter, Arial, sans-serif" font-size="38" font-weight="800">Why Supabase does real work here</text>
+  <text x="104" y="166" fill="#52525B" font-family="Inter, Arial, sans-serif" font-size="19">LaunchBase avoids a custom auth backend, custom CRUD API, and hand-rolled authorization middleware.</text>
+  <rect x="104" y="222" width="292" height="154" rx="20" fill="#F0FDF4" stroke="#BBF7D0"/>
+  <text x="132" y="262" fill="#047857" font-family="Inter, Arial, sans-serif" font-size="16" font-weight="800">1. SUPABASE AUTH</text>
+  <text x="132" y="300" fill="#111827" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="800">Session + user JWT</text>
+  <text x="132" y="332" fill="#4B5563" font-family="Inter, Arial, sans-serif" font-size="16">Email/password auth, current user,</text>
+  <text x="132" y="356" fill="#4B5563" font-family="Inter, Arial, sans-serif" font-size="16">and browser-safe anon key.</text>
+  <rect x="104" y="426" width="292" height="154" rx="20" fill="#F8FAFC" stroke="#E2E8F0"/>
+  <text x="132" y="466" fill="#334155" font-family="Inter, Arial, sans-serif" font-size="16" font-weight="800">2. PROFILE TRIGGER</text>
+  <text x="132" y="504" fill="#111827" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="800">auth.users -> profiles</text>
+  <text x="132" y="536" fill="#4B5563" font-family="Inter, Arial, sans-serif" font-size="16">A database trigger creates the app</text>
+  <text x="132" y="560" fill="#4B5563" font-family="Inter, Arial, sans-serif" font-size="16">profile row on signup.</text>
+  <rect x="456" y="222" width="332" height="358" rx="24" fill="#111713"/>
+  <text x="488" y="270" fill="#3ECF8E" font-family="Inter, Arial, sans-serif" font-size="16" font-weight="800">3. POSTGREST + JS CLIENT</text>
+  <text x="488" y="312" fill="#FFFFFF" font-family="Inter, Arial, sans-serif" font-size="28" font-weight="800">No custom CRUD API</text>
+  <text x="488" y="350" fill="#B5C8BD" font-family="Inter, Arial, sans-serif" font-size="17">Server and client components call</text>
+  <text x="488" y="376" fill="#B5C8BD" font-family="Inter, Arial, sans-serif" font-size="17">Supabase directly through typed table</text>
+  <text x="488" y="402" fill="#B5C8BD" font-family="Inter, Arial, sans-serif" font-size="17">queries and mutations.</text>
+  <rect x="488" y="448" width="268" height="88" rx="16" fill="#17241D" stroke="#2B493A"/>
+  <text x="516" y="482" fill="#E7F8EF" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="700">waitlist_entries.update()</text>
+  <text x="516" y="512" fill="#9BCFB8" font-family="Inter, Arial, sans-serif" font-size="15">RLS decides if the user may do it.</text>
+  <rect x="848" y="222" width="236" height="154" rx="20" fill="#F0FDF4" stroke="#BBF7D0"/>
+  <text x="876" y="262" fill="#047857" font-family="Inter, Arial, sans-serif" font-size="16" font-weight="800">4. RLS POLICIES</text>
+  <text x="876" y="300" fill="#111827" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="800">Access at the row</text>
+  <text x="876" y="332" fill="#4B5563" font-family="Inter, Arial, sans-serif" font-size="16">Anon, authenticated, owner,</text>
+  <text x="876" y="356" fill="#4B5563" font-family="Inter, Arial, sans-serif" font-size="16">and admin rules live in SQL.</text>
+  <rect x="848" y="426" width="236" height="154" rx="20" fill="#FFF7ED" stroke="#FED7AA"/>
+  <text x="876" y="466" fill="#C2410C" font-family="Inter, Arial, sans-serif" font-size="16" font-weight="800">5. LOCAL CLI</text>
+  <text x="876" y="504" fill="#111827" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="800">Resettable demo</text>
+  <text x="876" y="536" fill="#4B5563" font-family="Inter, Arial, sans-serif" font-size="16">Migrations + seed make the app</text>
+  <text x="876" y="560" fill="#4B5563" font-family="Inter, Arial, sans-serif" font-size="16">cloneable and reproducible.</text>
+  <rect x="1136" y="222" width="176" height="358" rx="24" fill="#F8FAFC" stroke="#E2E8F0"/>
+  <text x="1164" y="270" fill="#334155" font-family="Inter, Arial, sans-serif" font-size="16" font-weight="800">POSTGRES</text>
+  <text x="1164" y="310" fill="#111827" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="800">8 tables</text>
+  <g fill="#475569" font-family="Inter, Arial, sans-serif" font-size="15">
+    <text x="1164" y="352">profiles</text>
+    <text x="1164" y="382">organizations</text>
+    <text x="1164" y="412">members</text>
+    <text x="1164" y="442">waitlist</text>
+    <text x="1164" y="472">features</text>
+    <text x="1164" y="502">votes</text>
+    <text x="1164" y="532">roadmap</text>
+    <text x="1164" y="562">changelogs</text>
+  </g>
+  <path d="M396 300H456" stroke="#3ECF8E" stroke-width="4" stroke-linecap="round"/>
+  <path d="M788 300H848" stroke="#3ECF8E" stroke-width="4" stroke-linecap="round"/>
+  <path d="M1084 300H1136" stroke="#3ECF8E" stroke-width="4" stroke-linecap="round"/>
+  <path d="M396 504H456" stroke="#94A3B8" stroke-width="4" stroke-linecap="round"/>
+  <path d="M788 504H848" stroke="#94A3B8" stroke-width="4" stroke-linecap="round"/>
+  <path d="M1084 504H1136" stroke="#94A3B8" stroke-width="4" stroke-linecap="round"/>
+  <rect x="104" y="650" width="1208" height="92" rx="20" fill="#ECFDF5" stroke="#A7F3D0"/>
+  <text x="136" y="690" fill="#065F46" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="800">Practical result</text>
+  <text x="136" y="724" fill="#047857" font-family="Inter, Arial, sans-serif" font-size="18">LaunchBase can expose public reads, authenticated community actions, and admin-only PII from the same database without a separate authorization server.</text>
+</svg>

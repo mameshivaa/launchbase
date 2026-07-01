@@ -1,40 +1,48 @@
 # LaunchBase
 
-**LaunchBase is an open-source launch operations starter built with Supabase and Next.js.**
+**Build your startup launch OS on Supabase.**
 
-It gives developers and early startup teams a local-first foundation for a public launch page and an internal operating dashboard: waitlist signups, feature requests, votes, roadmap planning, changelog publishing, Supabase Auth, and Row Level Security.
+For founders and developers who want to collect waitlist demand, turn feature requests into roadmap decisions, and publish launch momentum without building auth, permissions, and admin plumbing from scratch.
 
-LaunchBase is not a hosted SaaS. Clone it, run Supabase locally, customize the brand copy and colors, and use it as the starting point for your own startup launch system.
+![LaunchBase overview](./docs/assets/launchbase-overview.svg)
 
-## Who it is for
+LaunchBase is an open-source, local-first starter for launch operations. It combines a public startup page with an internal dashboard for waitlists, feature requests, votes, roadmap planning, and changelog publishing.
 
-- **Startup founders** who need a practical launch page, waitlist, roadmap, and changelog without assembling a stack from scratch.
-- **Product managers** who want a lightweight operating dashboard for launch demand and roadmap signal.
-- **Developers** who want a readable Supabase Auth + RLS reference app that can be adapted quickly.
-- **OSS learners** who want to study a complete multi-tenant Supabase schema with public and admin surfaces.
+Bring your own product screenshots, edit one config file, run Supabase locally, and start from a working Auth + RLS foundation.
 
-## What you get
+## Use it when
 
-- Public startup page at `/launchbase-demo`
-- Admin dashboard at `/launchbase-demo/admin`
-- Waitlist signup collection and admin status workflow
-- Feature request board with authenticated voting
-- Public roadmap
-- Changelog publishing workflow
-- Supabase Auth and profile management
-- Organization-scoped data model
-- RLS policies for anonymous, authenticated, and admin users
-- Customizable landing page copy, CTA links, colors, and media slots
+- You are a **startup founder** who needs a credible launch page and a simple internal operating dashboard.
+- You are a **developer** who wants a concrete Supabase Auth + RLS app to fork, study, and adapt.
+- You are a **product operator** who wants waitlist, request, vote, roadmap, and changelog workflows without adopting a heavy product suite.
+- You are building an **OSS SaaS template** and need a real multi-tenant security model, not a static mockup.
 
-## Stack
+## What it includes
 
-| Layer | Tech |
+| Area | What LaunchBase gives you |
 | --- | --- |
-| Frontend | Next.js 16, React 19, Tailwind CSS 4 |
-| Backend | Supabase CLI, Postgres, PostgREST |
-| Auth | Supabase Auth email/password |
-| Access control | Supabase Row Level Security |
-| Runtime model | Local-first OSS starter |
+| Public launch page | Waitlist form, roadmap, feature requests, votes, changelog |
+| Admin dashboard | Waitlist status workflow, demand ranking, roadmap status, changelog publishing |
+| Account flow | Supabase Auth signup/login, profile row, next-step onboarding |
+| Customization | Brand copy, colors, CTA links, badges, and media slots in one config file |
+| Supabase foundation | Local CLI, migrations, seed data, PostgREST, Auth, and RLS policies |
+
+![LaunchBase workflow](./docs/assets/launchbase-workflow.svg)
+
+## Why Supabase is doing real work here
+
+LaunchBase is intentionally Supabase-native. The point is not only that it stores rows in Postgres; Supabase removes whole categories of app code that an early startup usually should not hand-roll.
+
+![Supabase architecture](./docs/assets/supabase-architecture.svg)
+
+Concretely:
+
+- **Auth is already tied to database identity.** Users sign up through Supabase Auth, then a Postgres trigger creates the matching `profiles` row. The app does not need a separate user bootstrap service.
+- **RLS replaces a custom authorization layer.** Public visitors, authenticated users, members, owners, and admins are separated with SQL policies. The same tables can safely power public pages and admin pages.
+- **PostgREST removes boilerplate CRUD routes.** The Next.js app reads and mutates tables through the Supabase client while RLS decides whether each query is allowed.
+- **The anon key stays safe by design.** The app uses only `NEXT_PUBLIC_SUPABASE_ANON_KEY` plus the current user session. No `service_role` key is used in client or server components.
+- **The local CLI makes the demo reproducible.** `supabase db reset` rebuilds migrations and seed data, so contributors can reproduce the same launch workspace quickly.
+- **Studio makes debugging visible.** Auth users, table rows, policies, and grants are inspectable while learning or adapting the app.
 
 ## Quick start
 
@@ -74,7 +82,7 @@ Open:
 1. Open `/launchbase-demo` and inspect the public startup page.
 2. Join the waitlist as an anonymous visitor.
 3. Sign up at `/signup`.
-4. Open `/account` and confirm your `profiles` row is visible through RLS.
+4. Open `/account` and confirm your profile is loaded through RLS.
 5. Bootstrap the signed-in user as demo org owner.
 6. Open `/launchbase-demo/admin`.
 7. Review waitlist entries, feature requests, roadmap status, and changelog drafts.
@@ -95,9 +103,9 @@ supabase db query --file scripts/local/bootstrap-admin.sql
 
 After that, open `/launchbase-demo/admin`.
 
-## Customize the landing page
+## Customize the startup landing page
 
-Startup teams should be able to make the app their own quickly. Edit:
+Edit:
 
 ```text
 src/config/landing-page.ts
@@ -105,15 +113,14 @@ src/config/landing-page.ts
 
 You can change:
 
-- Brand name and headline
-- Supporting copy
+- Brand name, eyebrow, headline, and supporting copy
 - Supabase-style accent colors
 - CTA labels and links
 - Stack badges
-- Media slot labels for product screenshots
+- Hero image and screenshot slot labels
 - Operation card text
 
-The default page includes image placeholder regions so teams can drop in their own product screenshot, admin dashboard screenshot, or public roadmap capture.
+The default UI includes media placeholders so a startup can attach its own product screenshot, admin dashboard screenshot, or public roadmap capture.
 
 ## Supabase schema
 
@@ -128,7 +135,7 @@ LaunchBase creates 8 core tables:
 7. `roadmap_items`
 8. `changelogs`
 
-Every product row is scoped by `organization_id`. RLS policies define the public, authenticated, and admin access model.
+Every product row is scoped by `organization_id`. RLS policies define the public, authenticated, member, owner, and admin access model.
 
 See [docs/supabase.md](./docs/supabase.md) for the architecture walkthrough.
 
@@ -149,6 +156,8 @@ src/
 ├── config/               # Startup-customizable landing page config
 ├── domain/entities/      # Shared TypeScript entity types
 └── lib/                  # Supabase clients and helpers
+
+docs/assets/              # README visuals and architecture diagrams
 
 supabase/
 ├── config.toml

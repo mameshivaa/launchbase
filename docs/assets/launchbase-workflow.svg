@@ -1,0 +1,45 @@
+<svg width="1440" height="780" viewBox="0 0 1440 780" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">LaunchBase user workflow</title>
+  <desc id="desc">Workflow diagram showing how founders, developers, and product teams use LaunchBase from clone to launch operations.</desc>
+  <rect width="1440" height="780" rx="32" fill="#FFFFFF"/>
+  <rect x="72" y="64" width="1296" height="652" rx="30" fill="#FAFAFA" stroke="#E4E4E7"/>
+  <text x="112" y="130" fill="#111827" font-family="Inter, Arial, sans-serif" font-size="40" font-weight="800">Who should use LaunchBase?</text>
+  <text x="112" y="170" fill="#52525B" font-family="Inter, Arial, sans-serif" font-size="20">Founders and developers who want a real launch system before they need a full product ops stack.</text>
+  <rect x="112" y="230" width="360" height="168" rx="24" fill="#111713"/>
+  <text x="144" y="276" fill="#3ECF8E" font-family="Inter, Arial, sans-serif" font-size="16" font-weight="800">FOUNDER</text>
+  <text x="144" y="318" fill="#FFFFFF" font-family="Inter, Arial, sans-serif" font-size="28" font-weight="800">Launch with signal</text>
+  <text x="144" y="356" fill="#B5C8BD" font-family="Inter, Arial, sans-serif" font-size="17">Collect waitlist demand, see what</text>
+  <text x="144" y="382" fill="#B5C8BD" font-family="Inter, Arial, sans-serif" font-size="17">users ask for, and publish momentum.</text>
+  <rect x="540" y="230" width="360" height="168" rx="24" fill="#F0FDF4" stroke="#BBF7D0"/>
+  <text x="572" y="276" fill="#047857" font-family="Inter, Arial, sans-serif" font-size="16" font-weight="800">DEVELOPER</text>
+  <text x="572" y="318" fill="#111827" font-family="Inter, Arial, sans-serif" font-size="28" font-weight="800">Start from working RLS</text>
+  <text x="572" y="356" fill="#4B5563" font-family="Inter, Arial, sans-serif" font-size="17">Study real policies, migrations, seed</text>
+  <text x="572" y="382" fill="#4B5563" font-family="Inter, Arial, sans-serif" font-size="17">data, and auth-driven UI routes.</text>
+  <rect x="968" y="230" width="360" height="168" rx="24" fill="#F8FAFC" stroke="#E2E8F0"/>
+  <text x="1000" y="276" fill="#334155" font-family="Inter, Arial, sans-serif" font-size="16" font-weight="800">PRODUCT TEAM</text>
+  <text x="1000" y="318" fill="#111827" font-family="Inter, Arial, sans-serif" font-size="28" font-weight="800">Operate the launch</text>
+  <text x="1000" y="356" fill="#4B5563" font-family="Inter, Arial, sans-serif" font-size="17">Move from request intake to roadmap</text>
+  <text x="1000" y="382" fill="#4B5563" font-family="Inter, Arial, sans-serif" font-size="17">planning and release communication.</text>
+  <rect x="112" y="480" width="1216" height="132" rx="24" fill="#FFFFFF" stroke="#E4E4E7"/>
+  <g font-family="Inter, Arial, sans-serif">
+    <circle cx="172" cy="546" r="22" fill="#3ECF8E"/>
+    <text x="166" y="553" fill="#06100B" font-size="18" font-weight="900">1</text>
+    <text x="212" y="538" fill="#111827" font-size="20" font-weight="800">Clone</text>
+    <text x="212" y="568" fill="#71717A" font-size="15">Install and run Supabase locally.</text>
+    <path d="M360 546H438" stroke="#D4D4D8" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="482" cy="546" r="22" fill="#3ECF8E"/>
+    <text x="476" y="553" fill="#06100B" font-size="18" font-weight="900">2</text>
+    <text x="522" y="538" fill="#111827" font-size="20" font-weight="800">Customize</text>
+    <text x="522" y="568" fill="#71717A" font-size="15">Edit copy, colors, and media slots.</text>
+    <path d="M690 546H768" stroke="#D4D4D8" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="812" cy="546" r="22" fill="#3ECF8E"/>
+    <text x="806" y="553" fill="#06100B" font-size="18" font-weight="900">3</text>
+    <text x="852" y="538" fill="#111827" font-size="20" font-weight="800">Bootstrap</text>
+    <text x="852" y="568" fill="#71717A" font-size="15">Promote a local owner for admin access.</text>
+    <path d="M1032 546H1110" stroke="#D4D4D8" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="1154" cy="546" r="22" fill="#3ECF8E"/>
+    <text x="1148" y="553" fill="#06100B" font-size="18" font-weight="900">4</text>
+    <text x="1194" y="538" fill="#111827" font-size="20" font-weight="800">Operate</text>
+    <text x="1194" y="568" fill="#71717A" font-size="15">Run waitlist, roadmap, and changelog.</text>
+  </g>
+</svg>
