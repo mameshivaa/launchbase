@@ -38,8 +38,8 @@ export function AuthHeader() {
 
   return (
     <header className="border-b border-zinc-200 dark:border-zinc-800">
-      <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-6 py-4">
-        <nav className="flex items-center gap-4 text-sm">
+      <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
+        <nav className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
           <Link href="/" className="font-semibold">
             LaunchBase
           </Link>
@@ -51,6 +51,13 @@ export function AuthHeader() {
           </Link>
           <Link href="/account" className="text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100">
             Account
+          </Link>
+          <span className="hidden h-4 w-px bg-zinc-200 dark:bg-zinc-800 sm:block" />
+          <Link href="/launchbase-demo" className="font-medium text-[#299764] hover:text-[#1f7a50]">
+            Public demo
+          </Link>
+          <Link href="/launchbase-demo/admin" className="font-medium text-[#299764] hover:text-[#1f7a50]">
+            Admin
           </Link>
         </nav>
 

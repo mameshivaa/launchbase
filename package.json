@@ -2,7 +2,7 @@
   "name": "launchbase",
   "version": "0.1.0",
   "private": false,
-  "description": "Launch OS demo with Supabase Auth, RLS, and Next.js — local-first OSS reference",
+  "description": "Open-source launch operations starter for startups, built with Supabase Auth, RLS, and Next.js",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

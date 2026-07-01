@@ -1,153 +1,188 @@
 # LaunchBase
 
-**Launch OS demo** built with **Supabase** (Postgres, Auth, RLS) and **Next.js**.
+**LaunchBase is an open-source launch operations starter built with Supabase and Next.js.**
 
-This is an **open-source, local-first reference project** — not a hosted SaaS product. Clone it, run `supabase start`, and explore how a multi-tenant launch page (waitlist, roadmap, feature board, changelog) fits together with Row Level Security.
+It gives developers and early startup teams a local-first foundation for a public launch page and an internal operating dashboard: waitlist signups, feature requests, votes, roadmap planning, changelog publishing, Supabase Auth, and Row Level Security.
+
+LaunchBase is not a hosted SaaS. Clone it, run Supabase locally, customize the brand copy and colors, and use it as the starting point for your own startup launch system.
+
+## Who it is for
+
+- **Startup founders** who need a practical launch page, waitlist, roadmap, and changelog without assembling a stack from scratch.
+- **Product managers** who want a lightweight operating dashboard for launch demand and roadmap signal.
+- **Developers** who want a readable Supabase Auth + RLS reference app that can be adapted quickly.
+- **OSS learners** who want to study a complete multi-tenant Supabase schema with public and admin surfaces.
 
 ## What you get
 
-- **8-table Postgres schema** scoped by `organization_id`
-- **Supabase Auth** with automatic `profiles` creation via trigger
-- **RLS policies** for anonymous, authenticated, and org-admin roles
-- **Next.js App Router** client using only the **anon key** (no `service_role` in the browser)
-- **Demo org** `launchbase-demo` with seed data
+- Public startup page at `/launchbase-demo`
+- Admin dashboard at `/launchbase-demo/admin`
+- Waitlist signup collection and admin status workflow
+- Feature request board with authenticated voting
+- Public roadmap
+- Changelog publishing workflow
+- Supabase Auth and profile management
+- Organization-scoped data model
+- RLS policies for anonymous, authenticated, and admin users
+- Customizable landing page copy, CTA links, colors, and media slots
 
 ## Stack
 
 | Layer | Tech |
-|-------|------|
+| --- | --- |
 | Frontend | Next.js 16, React 19, Tailwind CSS 4 |
-| Backend | Supabase (local CLI) |
-| Auth | Email/password |
-| Data | Postgres + RLS + PostgREST |
-
-## Prerequisites
-
-- [Node.js](https://nodejs.org/) 20+
-- [Supabase CLI](https://supabase.com/docs/guides/cli)
-- Docker (for local Supabase)
+| Backend | Supabase CLI, Postgres, PostgREST |
+| Auth | Supabase Auth email/password |
+| Access control | Supabase Row Level Security |
+| Runtime model | Local-first OSS starter |
 
 ## Quick start
 
 ```bash
-# 1. Clone and install
 git clone https://github.com/mameshivaa/launchbase.git
 cd launchbase
 npm install
 
-# 2. Start Supabase
 supabase start
-
-# 3. Environment (anon key only)
 cp .env.example .env.local
-supabase status -o json   # copy API_URL → NEXT_PUBLIC_SUPABASE_URL, ANON_KEY → NEXT_PUBLIC_SUPABASE_ANON_KEY
+supabase status -o json
+```
 
-# 4. Reset DB (migrations + seed)
+Copy the local Supabase values into `.env.local`:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<ANON_KEY from supabase status>
+```
+
+Then reset the database and run the app:
+
+```bash
 supabase db reset
-
-# 5. Run the app
 npm run dev
 ```
 
-Open **http://127.0.0.1:3000/launchbase-demo** for the public product page.
+Open:
 
-## Demo routes
+- Landing page: http://127.0.0.1:3000
+- Public demo: http://127.0.0.1:3000/launchbase-demo
+- Account: http://127.0.0.1:3000/account
+- Admin dashboard: http://127.0.0.1:3000/launchbase-demo/admin
 
-| URL | Who | Purpose |
-|-----|-----|---------|
-| `/launchbase-demo` | Anyone | Public roadmap, features, changelog, waitlist signup |
-| `/signup`, `/login` | Anyone | Auth |
-| `/account` | Signed-in user | Profile (`display_name`) |
-| `/launchbase-demo/admin` | Org admin only | Waitlist + changelog management |
+## Demo flow
+
+1. Open `/launchbase-demo` and inspect the public startup page.
+2. Join the waitlist as an anonymous visitor.
+3. Sign up at `/signup`.
+4. Open `/account` and confirm your `profiles` row is visible through RLS.
+5. Bootstrap the signed-in user as demo org owner.
+6. Open `/launchbase-demo/admin`.
+7. Review waitlist entries, feature requests, roadmap status, and changelog drafts.
 
 ## Bootstrap a local admin
 
-There is **no** “create organization” UI yet. For local demos, promote one signed-up user to owner:
+There is no organization creation UI yet. For local demos, promote a signed-up user to owner.
 
-1. Sign up at `/signup` (e.g. `admin.demo@example.invalid`)
-2. Copy the user UUID from **Supabase Studio → Authentication → Users**
-3. Edit `scripts/local/bootstrap-admin.sql` — replace `YOUR_PROFILE_UUID`
-4. Run in Studio SQL or:
+1. Sign up at `/signup`.
+2. Open `/account`.
+3. Copy the profile ID shown on the account page.
+4. Edit `scripts/local/bootstrap-admin.sql` and replace `YOUR_PROFILE_UUID`.
+5. Run it in Supabase Studio SQL editor, or run:
 
-   ```bash
-   supabase db query --file scripts/local/bootstrap-admin.sql
-   ```
-
-5. Log in and open `/launchbase-demo/admin`
-
-See [docs/supabase.md](./docs/supabase.md) for schema, RLS, and migration details.
-
-## Supabase layout
-
+```bash
+supabase db query --file scripts/local/bootstrap-admin.sql
 ```
+
+After that, open `/launchbase-demo/admin`.
+
+## Customize the landing page
+
+Startup teams should be able to make the app their own quickly. Edit:
+
+```text
+src/config/landing-page.ts
+```
+
+You can change:
+
+- Brand name and headline
+- Supporting copy
+- Supabase-style accent colors
+- CTA labels and links
+- Stack badges
+- Media slot labels for product screenshots
+- Operation card text
+
+The default page includes image placeholder regions so teams can drop in their own product screenshot, admin dashboard screenshot, or public roadmap capture.
+
+## Supabase schema
+
+LaunchBase creates 8 core tables:
+
+1. `profiles`
+2. `organizations`
+3. `organization_members`
+4. `waitlist_entries`
+5. `feature_requests`
+6. `feature_votes`
+7. `roadmap_items`
+8. `changelogs`
+
+Every product row is scoped by `organization_id`. RLS policies define the public, authenticated, and admin access model.
+
+See [docs/supabase.md](./docs/supabase.md) for the architecture walkthrough.
+
+## Security model
+
+- Anonymous users can read the public launch surface and join the waitlist.
+- Authenticated users can update their own profile, submit feature requests, and vote.
+- Organization owners/admins can read waitlist PII, update waitlist status, manage roadmap data, and publish changelog entries.
+- The app never uses `service_role` in Next.js client or server components.
+- The browser and server use only the Supabase anon key plus the current user session.
+
+## Project structure
+
+```text
+src/
+├── app/                  # Next.js App Router routes
+├── components/           # Auth, public, account, and admin UI
+├── config/               # Startup-customizable landing page config
+├── domain/entities/      # Shared TypeScript entity types
+└── lib/                  # Supabase clients and helpers
+
 supabase/
 ├── config.toml
-├── seed.sql                              # Demo org + public product data
+├── seed.sql
 └── migrations/
-    ├── 20260701120000_initial_schema.sql # Tables, triggers, RLS enabled
-    ├── 20260701130000_rls_policies.sql   # Policies + is_org_admin helpers
-    └── 20260701140000_table_grants.sql   # GRANTs for anon/authenticated API roles
+
+scripts/local/
+└── bootstrap-admin.sql
 ```
-
-**Important:** PostgREST needs both **RLS policies** and **table GRANTs**. Without grants, the browser gets `403 permission denied` even when policies exist.
-
-## Security model (summary)
-
-- **Anonymous:** public read (org, roadmap, features, published changelogs); waitlist INSERT
-- **Authenticated:** own profile; submit/vote on features; no admin data
-- **Org admin/owner:** waitlist read/update; changelog drafts; roadmap write (RLS ready, admin UI partial)
-
-The app never uses `service_role` in client or server components — only `NEXT_PUBLIC_SUPABASE_ANON_KEY` with the user session.
 
 ## Scripts
 
 | Command | Description |
-|---------|-------------|
-| `npm run dev` | Next.js dev server |
-| `npm run build` | Production build |
-| `supabase db reset` | Reapply migrations + seed |
-| `supabase status` | Local URLs and keys |
+| --- | --- |
+| `npm run dev` | Start the Next.js dev server |
+| `npm run build` | Build the app for production |
+| `npm run lint` | Run ESLint |
+| `supabase start` | Start the local Supabase stack |
+| `supabase db reset` | Reapply migrations and seed data |
+| `supabase status` | Show local Supabase URLs and keys |
 
-## Project structure
+## Current scope
 
-```
-src/
-├── app/[slug]/           # Public org page + admin
-├── components/           # Auth, public, admin UI
-├── domain/entities/      # Shared TypeScript types
-└── lib/supabase/         # Browser/server clients, admin gate
-scripts/local/            # Dev-only SQL (admin bootstrap)
-docs/supabase.md          # Architecture deep-dive
-```
+LaunchBase is intentionally small and readable. These are not included yet:
 
-## Not in scope (by design)
-
-- Production deployment or hosted Supabase project
-- Org self-service signup / billing
-- `beta_invites`, vote-count RPC, roadmap admin UI
-- Email confirmation in production (local config has confirmations off)
-
-Contributions and learning use cases welcome. This repo is meant to be read alongside Supabase Studio and the migration files.
+- Hosted production deployment
+- Billing
+- Organization self-service creation
+- Team invitation UI
+- Roadmap admin editing UI
+- Feature request triage UI
+- Vote-count RPC or database view
+- Email production hardening
 
 ## License
 
 [MIT](./LICENSE)
-
----
-
-## 日本語 — クイックスタート
-
-本番 SaaS ではなく、**Supabase の Auth / RLS / スキーマ構成を学ぶための OSS** です。
-
-```bash
-git clone https://github.com/mameshivaa/launchbase.git
-cd launchbase && npm install
-supabase start
-cp .env.example .env.local   # supabase status の anon key を設定
-supabase db reset
-npm run dev
-```
-
-- 公開ページ: http://127.0.0.1:3000/launchbase-demo  
-- 管理画面: `/launchbase-demo/admin`（要 [bootstrap SQL](./scripts/local/bootstrap-admin.sql)）  
-- 詳細: [docs/supabase.md](./docs/supabase.md)
