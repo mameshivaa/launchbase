@@ -4,7 +4,7 @@
 
 For founders and developers who want to collect waitlist demand, turn feature requests into roadmap decisions, and publish launch momentum without building auth, permissions, and admin plumbing from scratch.
 
-![LaunchBase overview](./docs/assets/launchbase-overview.svg)
+![LaunchBase landing page screenshot](./docs/assets/launchbase-home.png)
 
 LaunchBase is an open-source, local-first starter for launch operations. It combines a public startup page with an internal dashboard for waitlists, feature requests, votes, roadmap planning, and changelog publishing.
 
@@ -27,13 +27,13 @@ Bring your own product screenshots, edit one config file, run Supabase locally, 
 | Customization | Brand copy, colors, CTA links, badges, and media slots in one config file |
 | Supabase foundation | Local CLI, migrations, seed data, PostgREST, Auth, and RLS policies |
 
-![LaunchBase workflow](./docs/assets/launchbase-workflow.svg)
+![LaunchBase public startup page screenshot](./docs/assets/launchbase-public-demo.png)
 
 ## Why Supabase is doing real work here
 
 LaunchBase is intentionally Supabase-native. The point is not only that it stores rows in Postgres; Supabase removes whole categories of app code that an early startup usually should not hand-roll.
 
-![Supabase architecture](./docs/assets/supabase-architecture.svg)
+![LaunchBase admin dashboard screenshot](./docs/assets/launchbase-admin-dashboard.png)
 
 Concretely:
 
@@ -157,7 +157,7 @@ src/
 ├── domain/entities/      # Shared TypeScript entity types
 └── lib/                  # Supabase clients and helpers
 
-docs/assets/              # README visuals and architecture diagrams
+docs/assets/              # Real README screenshots captured from the app
 
 supabase/
 ├── config.toml
