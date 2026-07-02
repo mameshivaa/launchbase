@@ -6,6 +6,7 @@ import type { Changelog } from "@/domain/entities/changelog";
 import { createClient } from "@/lib/supabase/client";
 
 type ChangelogPanelProps = {
+  organizationId: string;
   initialChangelogs: Changelog[];
 };
 
@@ -17,11 +18,117 @@ function formatDate(value: string): string {
   });
 }
 
-export function ChangelogPanel({ initialChangelogs }: ChangelogPanelProps) {
+type Draft = {
+  title: string;
+  version: string;
+  body: string;
+};
+
+function toDraft(entry?: Changelog): Draft {
+  return {
+    title: entry?.title ?? "",
+    version: entry?.version ?? "",
+    body: entry?.body ?? "",
+  };
+}
+
+export function ChangelogPanel({
+  organizationId,
+  initialChangelogs,
+}: ChangelogPanelProps) {
   const router = useRouter();
   const [changelogs, setChangelogs] = useState(initialChangelogs);
+  const [newDraft, setNewDraft] = useState<Draft>(() => toDraft());
+  const [drafts, setDrafts] = useState<Record<string, Draft>>(() =>
+    Object.fromEntries(initialChangelogs.map((entry) => [entry.id, toDraft(entry)]))
+  );
   const [error, setError] = useState<string | null>(null);
   const [publishingId, setPublishingId] = useState<string | null>(null);
+  const [savingId, setSavingId] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
+
+  async function handleCreate(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError(null);
+
+    if (!newDraft.title.trim() || !newDraft.body.trim()) {
+      setError("Changelog title and body are required.");
+      return;
+    }
+
+    setCreating(true);
+
+    const supabase = createClient();
+    const { data, error: insertError } = await supabase
+      .from("changelogs")
+      .insert({
+        organization_id: organizationId,
+        title: newDraft.title.trim(),
+        version: newDraft.version.trim() || null,
+        body: newDraft.body.trim(),
+        published_at: null,
+      })
+      .select("id, organization_id, title, body, version, published_at, created_at, updated_at")
+      .single();
+
+    setCreating(false);
+
+    if (insertError) {
+      setError(insertError.message);
+      return;
+    }
+
+    if (data) {
+      const entry = data as Changelog;
+      setChangelogs((current) => [entry, ...current]);
+      setDrafts((current) => ({ ...current, [entry.id]: toDraft(entry) }));
+    }
+
+    setNewDraft(toDraft());
+    router.refresh();
+  }
+
+  async function handleSave(changelogId: string) {
+    const draft = drafts[changelogId];
+    if (!draft?.title.trim() || !draft.body.trim()) {
+      setError("Changelog title and body are required.");
+      return;
+    }
+
+    setError(null);
+    setSavingId(changelogId);
+
+    const supabase = createClient();
+    const { error: updateError } = await supabase
+      .from("changelogs")
+      .update({
+        title: draft.title.trim(),
+        version: draft.version.trim() || null,
+        body: draft.body.trim(),
+      })
+      .eq("id", changelogId);
+
+    setSavingId(null);
+
+    if (updateError) {
+      setError(updateError.message);
+      return;
+    }
+
+    setChangelogs((current) =>
+      current.map((entry) =>
+        entry.id === changelogId
+          ? {
+              ...entry,
+              title: draft.title.trim(),
+              version: draft.version.trim() || null,
+              body: draft.body.trim(),
+            }
+          : entry
+      )
+    );
+    router.refresh();
+  }
 
   async function handlePublish(changelogId: string) {
     setError(null);
@@ -68,6 +175,24 @@ export function ChangelogPanel({ initialChangelogs }: ChangelogPanelProps) {
           </p>
         ) : null}
 
+        <form
+          onSubmit={handleCreate}
+          className="mb-4 rounded-xl border border-dashed border-zinc-300 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-900/40"
+        >
+          <p className="text-sm font-semibold">Draft release note</p>
+          <ChangelogFields
+            draft={newDraft}
+            onChange={(patch) => setNewDraft((current) => ({ ...current, ...patch }))}
+          />
+          <button
+            type="submit"
+            disabled={creating}
+            className="mt-3 rounded-lg bg-zinc-950 px-3 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-50 dark:text-zinc-950 dark:hover:bg-zinc-200"
+          >
+            {creating ? "Creating..." : "Create draft"}
+          </button>
+        </form>
+
         {changelogs.length === 0 ? (
           <div className="rounded-lg border border-dashed border-zinc-300 bg-zinc-50 px-4 py-6 text-sm dark:border-zinc-800 dark:bg-zinc-900/40">
             <p className="font-medium text-zinc-900 dark:text-zinc-100">
@@ -89,7 +214,7 @@ export function ChangelogPanel({ initialChangelogs }: ChangelogPanelProps) {
                   className="rounded-xl border border-zinc-200 bg-white p-4 transition-colors hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-zinc-700"
                 >
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <h3 className="font-medium text-zinc-950 dark:text-zinc-50">
                           {entry.title}
@@ -117,8 +242,29 @@ export function ChangelogPanel({ initialChangelogs }: ChangelogPanelProps) {
                       <p className="mt-2 line-clamp-3 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
                         {entry.body}
                       </p>
+                      <ChangelogFields
+                        draft={drafts[entry.id] ?? toDraft(entry)}
+                        onChange={(patch) =>
+                          setDrafts((current) => ({
+                            ...current,
+                            [entry.id]: {
+                              ...(current[entry.id] ?? toDraft(entry)),
+                              ...patch,
+                            },
+                          }))
+                        }
+                      />
                     </div>
-                    {isDraft ? (
+                    <div className="flex shrink-0 flex-wrap gap-2 sm:flex-col">
+                      <button
+                        type="button"
+                        disabled={savingId === entry.id}
+                        onClick={() => handleSave(entry.id)}
+                        className="w-fit rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-semibold text-zinc-800 shadow-sm transition-colors hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-900"
+                      >
+                        {savingId === entry.id ? "Saving..." : "Save"}
+                      </button>
+                      {isDraft ? (
                       <button
                         type="button"
                         disabled={publishingId === entry.id}
@@ -127,7 +273,8 @@ export function ChangelogPanel({ initialChangelogs }: ChangelogPanelProps) {
                       >
                         {publishingId === entry.id ? "Publishing..." : "Publish"}
                       </button>
-                    ) : null}
+                      ) : null}
+                    </div>
                   </div>
                 </li>
               );
@@ -136,5 +283,48 @@ export function ChangelogPanel({ initialChangelogs }: ChangelogPanelProps) {
         )}
       </div>
     </section>
+  );
+}
+
+function ChangelogFields({
+  draft,
+  onChange,
+}: {
+  draft: Draft;
+  onChange: (patch: Partial<Draft>) => void;
+}) {
+  return (
+    <div className="mt-3 grid gap-3">
+      <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_8rem]">
+        <label className="flex flex-col gap-1 text-xs font-medium uppercase tracking-wide text-zinc-500">
+          Title
+          <input
+            value={draft.title}
+            onChange={(event) => onChange({ title: event.target.value })}
+            className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm normal-case tracking-normal text-zinc-900 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+            placeholder="What shipped?"
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-xs font-medium uppercase tracking-wide text-zinc-500">
+          Version
+          <input
+            value={draft.version}
+            onChange={(event) => onChange({ version: event.target.value })}
+            className="rounded-lg border border-zinc-300 bg-white px-3 py-2 font-mono text-sm normal-case tracking-normal text-zinc-900 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+            placeholder="0.4.0"
+          />
+        </label>
+      </div>
+      <label className="flex flex-col gap-1 text-xs font-medium uppercase tracking-wide text-zinc-500">
+        Body
+        <textarea
+          value={draft.body}
+          rows={4}
+          onChange={(event) => onChange({ body: event.target.value })}
+          className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm normal-case tracking-normal text-zinc-900 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+          placeholder="Write concise release notes in Markdown."
+        />
+      </label>
+    </div>
   );
 }

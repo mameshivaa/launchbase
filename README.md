@@ -24,6 +24,7 @@ Bring your own product screenshots, edit one config file, run Supabase locally, 
 | Public launch page | Waitlist form, roadmap, feature requests, votes, changelog |
 | Admin dashboard | Waitlist status workflow, demand ranking, roadmap status, changelog publishing |
 | Account flow | Supabase Auth signup/login, profile row, next-step onboarding |
+| Team access | Owner-created workspace, DB-backed invite links, role-based membership |
 | Customization | Brand copy, colors, CTA links, badges, and media slots in one config file |
 | Supabase foundation | Local CLI, migrations, seed data, PostgREST, Auth, and RLS policies |
 
@@ -77,19 +78,18 @@ Open:
 - Account: http://127.0.0.1:3000/account
 - Admin dashboard: http://127.0.0.1:3000/launchbase-demo/admin
 
-## Demo flow
+## Three-minute launch flow
 
-1. Open `/launchbase-demo` and inspect the public startup page.
-2. Join the waitlist as an anonymous visitor.
-3. Sign up at `/signup`.
-4. Open `/account` and confirm your profile is loaded through RLS.
-5. Bootstrap the signed-in user as demo org owner.
-6. Open `/launchbase-demo/admin`.
-7. Review waitlist entries, feature requests, roadmap status, and changelog drafts.
+1. Sign up at `/signup`.
+2. Open `/account`.
+3. Create a workspace. LaunchBase calls `create_organization(name, slug)` and makes you the owner in the same transaction.
+4. Open `/<your-slug>/admin`.
+5. Use the admin dashboard to qualify waitlist entries, invite teammates, triage feature requests, edit the roadmap, and draft/publish changelog entries.
+6. Open `/<your-slug>` to inspect the public launch page backed by the same Supabase tables and RLS policies.
 
-## Bootstrap a local admin
+## Local demo fallback
 
-There is no organization creation UI yet. For local demos, promote a signed-up user to owner.
+The normal path is workspace creation from `/account`. If you specifically want to promote a user into the seeded `launchbase-demo` organization, use the local-only fallback SQL.
 
 1. Sign up at `/signup`.
 2. Open `/account`.
@@ -101,7 +101,7 @@ There is no organization creation UI yet. For local demos, promote a signed-up u
 supabase db query --file scripts/local/bootstrap-admin.sql
 ```
 
-After that, open `/launchbase-demo/admin`.
+After that, open `/launchbase-demo/admin`. Do not use this fallback as a production onboarding pattern.
 
 ## Customize the startup landing page
 
@@ -124,16 +124,17 @@ The default UI includes media placeholders so a startup can attach its own produ
 
 ## Supabase schema
 
-LaunchBase creates 8 core tables:
+LaunchBase creates 9 core tables:
 
 1. `profiles`
 2. `organizations`
 3. `organization_members`
-4. `waitlist_entries`
-5. `feature_requests`
-6. `feature_votes`
-7. `roadmap_items`
-8. `changelogs`
+4. `organization_invitations`
+5. `waitlist_entries`
+6. `feature_requests`
+7. `feature_votes`
+8. `roadmap_items`
+9. `changelogs`
 
 Every product row is scoped by `organization_id`. RLS policies define the public, authenticated, member, owner, and admin access model.
 
@@ -141,9 +142,11 @@ See [docs/supabase.md](./docs/supabase.md) for the architecture walkthrough.
 
 ## Security model
 
-- Anonymous users can read the public launch surface and join the waitlist.
-- Authenticated users can update their own profile, submit feature requests, and vote.
-- Organization owners/admins can read waitlist PII, update waitlist status, manage roadmap data, and publish changelog entries.
+- Anonymous users can read the public launch surface, join the waitlist, and read aggregate vote counts.
+- Authenticated users can update their own profile, create a workspace, accept invitations, submit feature requests, and vote.
+- Organization owners/admins can invite teammates, read waitlist PII, update waitlist status, manage roadmap data, and publish changelog entries.
+- Invitation tokens are hashed in Postgres; raw invite links are returned only when created or rotated.
+- Raw vote rows are not publicly readable; public pages use `get_feature_vote_counts(org_id)`.
 - The app never uses `service_role` in Next.js client or server components.
 - The browser and server use only the Supabase anon key plus the current user session.
 
@@ -175,22 +178,31 @@ scripts/local/
 | `npm run dev` | Start the Next.js dev server |
 | `npm run build` | Build the app for production |
 | `npm run lint` | Run ESLint |
+| `npm run test:rls` | Run local RLS smoke tests against Supabase |
 | `supabase start` | Start the local Supabase stack |
 | `supabase db reset` | Reapply migrations and seed data |
 | `supabase status` | Show local Supabase URLs and keys |
+
+For `npm run test:rls`, export `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and local-only `SUPABASE_SERVICE_ROLE_KEY` from `supabase status`.
+
+## Deploy
+
+Use [docs/deploy.md](./docs/deploy.md) for the Vercel + Supabase Cloud path:
+
+1. Create a Supabase Cloud project.
+2. Apply migrations.
+3. Set Vercel environment variables.
+4. Configure Auth site URL and redirect URLs.
+5. Enable production SMTP before relying on email confirmations or password resets.
 
 ## Current scope
 
 LaunchBase is intentionally small and readable. These are not included yet:
 
-- Hosted production deployment
 - Billing
-- Organization self-service creation
-- Team invitation UI
-- Roadmap admin editing UI
-- Feature request triage UI
-- Vote-count RPC or database view
-- Email production hardening
+- Managed hosted SaaS operations
+- Built-in email provider integration
+- Billing
 
 ## License
 

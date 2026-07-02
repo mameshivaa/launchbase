@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { CreateWorkspaceForm } from "@/components/account/create-workspace-form";
 import { ProfileForm } from "@/components/account/profile-form";
 import type { Profile } from "@/domain/entities/profile";
 import { createClient } from "@/lib/supabase/server";
@@ -37,6 +38,27 @@ export default async function AccountPage() {
 
   const role = membership?.role ?? null;
   const canOpenAdmin = role === "owner" || role === "admin";
+  const { data: memberships } = await supabase
+    .from("organization_members")
+    .select("role, organizations(id, name, slug)")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
+
+  const workspaces =
+    memberships?.flatMap((item) => {
+      const organization = Array.isArray(item.organizations)
+        ? item.organizations[0]
+        : item.organizations;
+
+      return organization
+        ? [
+            {
+              role: item.role,
+              organization,
+            },
+          ]
+        : [];
+    }) ?? [];
 
   return (
     <main className="mx-auto grid w-full max-w-6xl flex-1 gap-6 px-4 py-8 sm:px-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(22rem,0.75fr)] lg:px-8">
@@ -60,9 +82,62 @@ export default async function AccountPage() {
           initialProfile={profile as Profile | null}
           profileError={profileError?.message ?? null}
         />
+
+        <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm shadow-zinc-200/60 dark:border-zinc-800 dark:bg-zinc-950 dark:shadow-black/20">
+          <h2 className="text-base font-semibold tracking-tight">
+            Your workspaces
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+            Open the public launch page or admin dashboard for each organization
+            where you are a member.
+          </p>
+
+          {workspaces.length === 0 ? (
+            <div className="mt-4 rounded-xl border border-dashed border-zinc-300 bg-zinc-50 px-4 py-5 text-sm dark:border-zinc-800 dark:bg-zinc-900/40">
+              <p className="font-medium text-zinc-900 dark:text-zinc-100">
+                No workspaces yet.
+              </p>
+              <p className="mt-1 text-zinc-500">
+                Create one to unlock an owner dashboard without local SQL.
+              </p>
+            </div>
+          ) : (
+            <ul className="mt-4 flex flex-col gap-3">
+              {workspaces.map(({ organization, role }) => (
+                <li
+                  key={organization.id}
+                  className="flex flex-col gap-3 rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-900/40 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div>
+                    <p className="font-semibold">{organization.name}</p>
+                    <p className="mt-1 font-mono text-xs text-zinc-500">
+                      /{organization.slug} · {role}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Link
+                      href={`/${organization.slug}`}
+                      className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-semibold text-zinc-800 shadow-sm transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-900"
+                    >
+                      Public page
+                    </Link>
+                    <Link
+                      href={`/${organization.slug}/admin`}
+                      className="rounded-lg bg-zinc-950 px-3 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-950 dark:hover:bg-zinc-200"
+                    >
+                      Admin
+                    </Link>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       </div>
 
       <aside className="flex flex-col gap-4">
+        <CreateWorkspaceForm />
+
         <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm shadow-zinc-200/60 dark:border-zinc-800 dark:bg-zinc-950 dark:shadow-black/20">
           <h2 className="text-base font-semibold tracking-tight">
             Continue the demo

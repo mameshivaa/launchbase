@@ -201,9 +201,8 @@ CREATE POLICY "feature_requests_update_admin"
 -- ---------------------------------------------------------------------------
 -- Vote counts are public; only signed-in users can vote (and only as themselves).
 --
--- MVP note: feature_votes_select_public exposes raw vote rows (user_id per vote).
--- For production, replace with a vote-count view or SECURITY DEFINER RPC that
--- returns aggregated counts without revealing individual voter identities.
+-- Initial MVP note: this public raw-row policy is removed by the later
+-- MVP-completion migration, which replaces it with aggregate vote-count RPCs.
 
 CREATE POLICY "feature_votes_select_public"
   ON public.feature_votes

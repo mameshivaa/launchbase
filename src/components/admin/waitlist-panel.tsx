@@ -36,8 +36,18 @@ function formatStatus(status: WaitlistStatus): string {
 export function WaitlistPanel({ initialEntries }: WaitlistPanelProps) {
   const router = useRouter();
   const [entries, setEntries] = useState(initialEntries);
+  const [statusFilter, setStatusFilter] = useState<WaitlistStatus | "all">("all");
+  const [sourceFilter, setSourceFilter] = useState("all");
   const [error, setError] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const sources = Array.from(
+    new Set(entries.map((entry) => entry.source).filter(Boolean))
+  ).sort() as string[];
+  const visibleEntries = entries.filter((entry) => {
+    const statusMatches = statusFilter === "all" || entry.status === statusFilter;
+    const sourceMatches = sourceFilter === "all" || entry.source === sourceFilter;
+    return statusMatches && sourceMatches;
+  });
 
   async function handleStatusChange(entryId: string, status: WaitlistStatus) {
     setError(null);
@@ -77,7 +87,7 @@ export function WaitlistPanel({ initialEntries }: WaitlistPanelProps) {
             </p>
           </div>
           <span className="w-fit rounded-full border border-zinc-200 bg-white px-3 py-1.5 font-mono text-xs text-zinc-500 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-            {entries.length} shown
+            {visibleEntries.length} / {entries.length} shown
           </span>
         </div>
       </div>
@@ -89,6 +99,41 @@ export function WaitlistPanel({ initialEntries }: WaitlistPanelProps) {
           </p>
         ) : null}
 
+        <div className="mb-4 flex flex-wrap gap-3">
+          <label className="flex flex-col gap-1 text-xs font-medium uppercase tracking-wide text-zinc-500">
+            Status
+            <select
+              value={statusFilter}
+              onChange={(event) =>
+                setStatusFilter(event.target.value as WaitlistStatus | "all")
+              }
+              className="rounded-lg border border-zinc-300 bg-white px-2.5 py-2 text-sm normal-case tracking-normal text-zinc-900 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+            >
+              <option value="all">All statuses</option>
+              {WAITLIST_STATUSES.map((status) => (
+                <option key={status} value={status}>
+                  {formatStatus(status)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="flex flex-col gap-1 text-xs font-medium uppercase tracking-wide text-zinc-500">
+            Source
+            <select
+              value={sourceFilter}
+              onChange={(event) => setSourceFilter(event.target.value)}
+              className="rounded-lg border border-zinc-300 bg-white px-2.5 py-2 text-sm normal-case tracking-normal text-zinc-900 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+            >
+              <option value="all">All sources</option>
+              {sources.map((source) => (
+                <option key={source} value={source}>
+                  {source}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
         {entries.length === 0 ? (
           <div className="rounded-lg border border-dashed border-zinc-300 bg-zinc-50 px-4 py-6 text-sm dark:border-zinc-800 dark:bg-zinc-900/40">
             <p className="font-medium text-zinc-900 dark:text-zinc-100">
@@ -97,6 +142,15 @@ export function WaitlistPanel({ initialEntries }: WaitlistPanelProps) {
             <p className="mt-1 leading-6 text-zinc-500">
               New public signup submissions will appear here for review and
               invite tracking.
+            </p>
+          </div>
+        ) : visibleEntries.length === 0 ? (
+          <div className="rounded-lg border border-dashed border-zinc-300 bg-zinc-50 px-4 py-6 text-sm dark:border-zinc-800 dark:bg-zinc-900/40">
+            <p className="font-medium text-zinc-900 dark:text-zinc-100">
+              No entries match these filters.
+            </p>
+            <p className="mt-1 leading-6 text-zinc-500">
+              Clear a filter to return to the full waitlist.
             </p>
           </div>
         ) : (
@@ -119,7 +173,7 @@ export function WaitlistPanel({ initialEntries }: WaitlistPanelProps) {
                 </tr>
               </thead>
               <tbody>
-                {entries.map((entry) => (
+                {visibleEntries.map((entry) => (
                   <tr
                     key={entry.id}
                     className="border-b border-zinc-100 transition-colors last:border-0 hover:bg-zinc-50/70 dark:border-zinc-900 dark:hover:bg-zinc-900/40"

@@ -9,7 +9,7 @@ import type { Changelog } from "@/domain/entities/changelog";
 import type { FeatureRequest } from "@/domain/entities/feature-request";
 import type { Organization } from "@/domain/entities/organization";
 import type { RoadmapItem } from "@/domain/entities/roadmap-item";
-import { buildVoteSummary } from "@/lib/public/feature-votes";
+import { buildUserVotedIds, buildVoteCounts } from "@/lib/public/feature-votes";
 import { createClient } from "@/lib/supabase/server";
 
 type PublicOrgPageProps = {
@@ -74,16 +74,19 @@ export default async function PublicOrgPage({ params }: PublicOrgPageProps) {
   let userVotedIds: string[] = [];
 
   if (featureIds.length > 0) {
-    const { data: votes } = await supabase
-      .from("feature_votes")
-      .select("feature_request_id, user_id")
-      .in("feature_request_id", featureIds);
+    const [{ data: voteCountRows }, { data: userVotes }] = await Promise.all([
+      supabase.rpc("get_feature_vote_counts", { org_id: org.id }),
+      user
+        ? supabase
+            .from("feature_votes")
+            .select("feature_request_id")
+            .in("feature_request_id", featureIds)
+            .eq("user_id", user.id)
+        : Promise.resolve({ data: null }),
+    ]);
 
-    ({ voteCounts, userVotedIds } = buildVoteSummary(
-      featureIds,
-      votes,
-      user?.id ?? null
-    ));
+    voteCounts = buildVoteCounts(featureIds, voteCountRows);
+    userVotedIds = buildUserVotedIds(userVotes);
   }
 
   return (

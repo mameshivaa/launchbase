@@ -18,6 +18,7 @@ auth.users
 
 organizations (tenant root, public slug)
     ├── organization_members (user + role: owner | admin | member)
+    ├── organization_invitations (hashed token + invited role)
     ├── waitlist_entries
     ├── feature_requests
     ├── feature_votes → feature_requests, profiles
@@ -61,6 +62,7 @@ Policy intent:
 | `profiles` | — | read/update own | — |
 | `organizations` | read | read | update |
 | `organization_members` | — | read fellow members | manage members |
+| `organization_invitations` | — | — | create, read, revoke, rotate links |
 | `waitlist_entries` | insert | insert | read, update status |
 | `feature_requests` | read; insert with email | read; insert as self | update/triage |
 | `feature_votes` | read rows | insert/delete own vote | — |
@@ -78,6 +80,24 @@ permission denied for table profiles (42501)
 ```
 
 RLS filters rows; **GRANT** allows the role to touch the table at all.
+
+### 4. `20260702090000_mvp_complete.sql`
+
+Creates:
+
+- `public.create_organization(org_name, org_slug)` — authenticated RPC that creates an organization and inserts the caller as `owner`
+- `public.get_feature_vote_counts(org_id)` — public-safe aggregate vote counts
+- private `feature_votes` reads: authenticated users can read only their own votes; admins can inspect votes for their org; anonymous users cannot read raw voter rows
+
+### 5. `20260702100000_team_invitations.sql`
+
+Creates:
+
+- `organization_invitations` — pending/accepted/revoked/expired invites scoped to one organization
+- `create_organization_invitation(org_id, email, role)` — admin-only RPC that returns a one-time raw token for copyable links
+- `rotate_organization_invitation_token(invitation_id)` — admin-only RPC that replaces the hash and returns a fresh one-time raw token
+- `revoke_organization_invitation(invitation_id)` — admin-only RPC
+- `accept_organization_invitation(token)` — authenticated RPC that checks token hash, expiry, status, and email match before creating membership
 
 ## Auth → profile flow
 
@@ -97,13 +117,21 @@ Admin checks use `organization_members`:
 -- is_org_admin: role IN ('owner', 'admin')
 ```
 
-**Chicken-and-egg:** the first owner cannot be created through the app yet (no org-creation migration). For local demos, run:
+The normal owner bootstrap path is `/account` → **Create workspace**. That calls:
+
+```sql
+select public.create_organization('Acme Launch', 'acme-launch');
+```
+
+The function inserts one `organizations` row and one `organization_members` row with `role = 'owner'` in a single transaction.
+
+**Local fallback:** if you specifically want to promote a user into the seeded demo organization, run:
 
 ```text
 scripts/local/bootstrap-admin.sql
 ```
 
-This inserts one `organization_members` row as postgres (bypasses RLS). **Do not** ship this pattern to production without hardening.
+This inserts one `organization_members` row as postgres (bypasses RLS). It is retained only as a local fallback.
 
 The Next.js admin page uses `resolveOrgAdminAccess()`:
 
@@ -112,6 +140,23 @@ The Next.js admin page uses `resolveOrgAdminAccess()`:
 | Logged out | Redirect to `/login?next=/…/admin` |
 | Logged in, not admin | Access denied screen |
 | Owner/admin | Dashboard |
+
+## Team invitation model
+
+Team invites are DB-backed links, not Supabase Auth admin invites. This keeps `service_role` out of the Next.js app runtime.
+
+1. Owner/admin creates an invite from the admin dashboard.
+2. Postgres stores only `token_hash`; the raw token is returned once for copying.
+3. If the link is lost, admin rotates the pending invite to get a new token.
+4. `/invite/[token]` requires login.
+5. `accept_organization_invitation(token)` verifies:
+   - token hash exists
+   - invite is pending
+   - invite has not expired
+   - signed-in email matches invitation email
+6. Membership is inserted or updated with the invited role.
+
+Invite creation UI allows `admin` and `member`. It does not invite new `owner` users.
 
 ## Waitlist flow (public)
 
@@ -129,7 +174,7 @@ Confirm in Studio: **Table Editor → waitlist_entries**.
 - **Public read** of all requests for the org
 - **Anonymous insert** possible via RLS with `submitter_email` (not used in current UI)
 - **Authenticated insert** with `created_by = auth.uid()`
-- **Votes:** authenticated users insert/delete own row; vote counts aggregated from raw `feature_votes` in MVP (see migration comment — production should use a count view or RPC)
+- **Votes:** authenticated users insert/delete own row; public pages call `get_feature_vote_counts(org_id)` so voter `user_id` values are not exposed
 
 ## Changelog visibility
 
@@ -142,10 +187,18 @@ Seed includes draft **v0.3.0** — visible only to bootstrapped admin until publ
 
 ## Local configuration
 
-`supabase/config.toml` highlights:
+`supabase/config.toml` highlights for local development:
 
 - `site_url = "http://127.0.0.1:3000"` — auth redirect allow-list
 - `[auth.email] enable_confirmations = false` — immediate login after signup (local demo)
+
+Production recommendations:
+
+- Set Supabase Auth **Site URL** to the hosted app URL.
+- Add redirect URLs for `/login`, `/account`, and `/invite/*`.
+- Enable email confirmations before accepting real users.
+- Configure a production SMTP provider in Supabase Auth.
+- Keep local `SUPABASE_SERVICE_ROLE_KEY` out of Vercel frontend/runtime env unless adding explicit server-only admin APIs.
 
 ## Environment variables
 
@@ -164,16 +217,16 @@ Never expose `service_role`, database passwords, or JWT secrets in frontend code
 2. Studio → tables + seed rows
 3. Public page as incognito — waitlist signup
 4. Sign up → verify `profiles` row
-5. Bootstrap admin SQL → admin dashboard
-6. Non-admin user → access denied on `/admin`
-7. Read `20260701130000_rls_policies.sql` alongside Studio **Authentication → Policies**
+5. Create a workspace from `/account` → admin dashboard
+6. Create a team invite → copy link → accept as matching email
+7. Non-admin user → access denied on `/admin`
+8. Run `npm run test:rls` with local Supabase keys exported
+9. Read the migrations alongside Studio **Authentication → Policies**
 
 ## Known follow-ups (not implemented)
 
-- Org creation + self-assign owner (replace bootstrap SQL)
-- Roadmap admin UI (RLS already allows admin CRUD)
-- Feature request triage UI for admins
-- Vote-count view / RPC to hide voter `user_id`
 - `beta_invites` table
+- Email provider SDK integration
+- Billing and managed hosted SaaS operations
 
 These are intentional gaps for a small, readable OSS reference.

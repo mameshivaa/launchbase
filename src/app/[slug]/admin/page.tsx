@@ -2,12 +2,16 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { AccessDenied } from "@/components/admin/access-denied";
 import { ChangelogPanel } from "@/components/admin/changelog-panel";
+import { FeatureTriagePanel } from "@/components/admin/feature-triage-panel";
+import { RoadmapPanel } from "@/components/admin/roadmap-panel";
+import { TeamInvitationsPanel } from "@/components/admin/team-invitations-panel";
 import { WaitlistPanel } from "@/components/admin/waitlist-panel";
 import type { Changelog } from "@/domain/entities/changelog";
 import type { FeatureRequest } from "@/domain/entities/feature-request";
+import type { OrganizationInvitation } from "@/domain/entities/organization-invitation";
 import type { RoadmapItem } from "@/domain/entities/roadmap-item";
 import type { WaitlistEntry } from "@/domain/entities/waitlist-entry";
-import { buildVoteSummary } from "@/lib/public/feature-votes";
+import { buildVoteCounts } from "@/lib/public/feature-votes";
 import { resolveOrgAdminAccess } from "@/lib/supabase/org-admin-access";
 import { createClient } from "@/lib/supabase/server";
 
@@ -477,6 +481,7 @@ export default async function AdminPage({ params }: AdminPageProps) {
     { data: featureRequests },
     { data: roadmapItems },
     { data: changelogs },
+    { data: invitations },
   ] = await Promise.all([
     supabase
       .from("waitlist_entries")
@@ -506,23 +511,31 @@ export default async function AdminPage({ params }: AdminPageProps) {
       )
       .eq("organization_id", org.id)
       .order("created_at", { ascending: false }),
+    supabase
+      .from("organization_invitations")
+      .select(
+        "id, organization_id, email, role, status, expires_at, accepted_at, created_at, updated_at"
+      )
+      .eq("organization_id", org.id)
+      .order("created_at", { ascending: false }),
   ]);
 
   const waitlist = (waitlistEntries ?? []) as WaitlistEntry[];
   const features = (featureRequests ?? []) as FeatureRequest[];
   const roadmap = (roadmapItems ?? []) as RoadmapItem[];
   const allChangelogs = (changelogs ?? []) as Changelog[];
+  const orgInvitations = (invitations ?? []) as OrganizationInvitation[];
   const featureIds = features.map((item) => item.id);
 
   let voteCounts: Record<string, number> = {};
 
   if (featureIds.length > 0) {
-    const { data: votes } = await supabase
-      .from("feature_votes")
-      .select("feature_request_id, user_id")
-      .in("feature_request_id", featureIds);
+    const { data: voteCountRows } = await supabase.rpc(
+      "get_feature_vote_counts",
+      { org_id: org.id }
+    );
 
-    ({ voteCounts } = buildVoteSummary(featureIds, votes, user.id));
+    voteCounts = buildVoteCounts(featureIds, voteCountRows);
   }
 
   const totalVotes = Object.values(voteCounts).reduce(
@@ -653,7 +666,7 @@ export default async function AdminPage({ params }: AdminPageProps) {
 
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1.18fr)_minmax(24rem,0.82fr)]">
           <div className="flex flex-col gap-6">
-            <WaitlistPanel initialEntries={waitlist.slice(0, 10)} />
+            <WaitlistPanel initialEntries={waitlist} />
 
             <OperationsPanel
               title="Top feature requests by votes"
@@ -662,9 +675,19 @@ export default async function AdminPage({ params }: AdminPageProps) {
             >
               <TopFeatureRequests features={features} voteCounts={voteCounts} />
             </OperationsPanel>
+
+            <FeatureTriagePanel
+              initialFeatures={features}
+              voteCounts={voteCounts}
+            />
           </div>
 
           <div className="flex flex-col gap-6">
+            <TeamInvitationsPanel
+              organizationId={org.id}
+              initialInvitations={orgInvitations}
+            />
+
             <OperationsPanel
               title="Roadmap status overview"
               description="Keep the public roadmap compact, current, and credible."
@@ -680,6 +703,8 @@ export default async function AdminPage({ params }: AdminPageProps) {
               <RoadmapStatusOverview items={roadmap} />
             </OperationsPanel>
 
+            <RoadmapPanel organizationId={org.id} initialItems={roadmap} />
+
             <OperationsPanel
               title="Changelog publishing status"
               description="Separate draft release notes from entries already published to customers."
@@ -687,7 +712,10 @@ export default async function AdminPage({ params }: AdminPageProps) {
               <ChangelogStatusOverview changelogs={allChangelogs} />
             </OperationsPanel>
 
-            <ChangelogPanel initialChangelogs={allChangelogs.slice(0, 6)} />
+            <ChangelogPanel
+              organizationId={org.id}
+              initialChangelogs={allChangelogs.slice(0, 6)}
+            />
           </div>
         </div>
       </div>
