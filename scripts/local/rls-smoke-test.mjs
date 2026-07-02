@@ -361,6 +361,16 @@ try {
     })
   );
 
+  await assertBlocked(
+    "anon cannot read launch activity",
+    request(
+      `/rest/v1/launch_activity_events?organization_id=eq.${organization.id}&select=event_type,subject_label`,
+      {
+        headers: headers(anonKey),
+      }
+    )
+  );
+
   const feature = (
     await assertOk(
       "authenticated user submits feature request",
@@ -459,6 +469,37 @@ try {
       body: JSON.stringify({ published_at: new Date().toISOString() }),
     })
   );
+
+  const activityEvents = await assertOk(
+    "admin can read trigger-recorded launch activity",
+    request(
+      `/rest/v1/launch_activity_events?organization_id=eq.${organization.id}&select=event_type,subject_label&order=created_at.desc`,
+      {
+        headers: headers(anonKey, ownerAccessToken),
+      }
+    )
+  );
+
+  const activityTypes = new Set(activityEvents.map((event) => event.event_type));
+  for (const expectedType of [
+    "waitlist_joined",
+    "feature_request_created",
+    "feature_request_triaged",
+    "roadmap_item_created",
+    "changelog_draft_created",
+    "changelog_published",
+    "team_invite_created",
+    "team_invite_accepted",
+    "team_invite_revoked",
+  ]) {
+    if (!activityTypes.has(expectedType)) {
+      throw new Error(
+        `Expected activity event ${expectedType}, got ${JSON.stringify(
+          activityEvents
+        )}`
+      );
+    }
+  }
 } finally {
   if (createdOrganizationId) {
     await request(`/rest/v1/organizations?id=eq.${createdOrganizationId}`, {

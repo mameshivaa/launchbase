@@ -25,6 +25,7 @@ Bring your own product screenshots, edit one config file, run Supabase locally, 
 | Admin dashboard | Waitlist status workflow, demand ranking, roadmap status, changelog publishing |
 | Account flow | Supabase Auth signup/login, profile row, next-step onboarding |
 | Team access | Owner-created workspace, DB-backed invite links, role-based membership |
+| Activity trail | Postgres-triggered launch activity log visible only to workspace admins |
 | Customization | Brand copy, colors, CTA links, badges, and media slots in one config file |
 | Supabase foundation | Local CLI, migrations, seed data, PostgREST, Auth, and RLS policies |
 
@@ -41,6 +42,7 @@ Concretely:
 - **Auth is already tied to database identity.** Users sign up through Supabase Auth, then a Postgres trigger creates the matching `profiles` row. The app does not need a separate user bootstrap service.
 - **RLS replaces a custom authorization layer.** Public visitors, authenticated users, members, owners, and admins are separated with SQL policies. The same tables can safely power public pages and admin pages.
 - **PostgREST removes boilerplate CRUD routes.** The Next.js app reads and mutates tables through the Supabase client while RLS decides whether each query is allowed.
+- **Postgres triggers create operational history.** Waitlist updates, feature triage, roadmap changes, changelog publishing, and team invites automatically write admin-only launch activity events.
 - **The anon key stays safe by design.** The app uses only `NEXT_PUBLIC_SUPABASE_ANON_KEY` plus the current user session. No `service_role` key is used in client or server components.
 - **The local CLI makes the demo reproducible.** `supabase db reset` rebuilds migrations and seed data, so contributors can reproduce the same launch workspace quickly.
 - **Studio makes debugging visible.** Auth users, table rows, policies, and grants are inspectable while learning or adapting the app.
@@ -85,7 +87,8 @@ Open:
 3. Create a workspace. LaunchBase calls `create_organization(name, slug)` and makes you the owner in the same transaction.
 4. Open `/<your-slug>/admin`.
 5. Use the admin dashboard to qualify waitlist entries, invite teammates, triage feature requests, edit the roadmap, and draft/publish changelog entries.
-6. Open `/<your-slug>` to inspect the public launch page backed by the same Supabase tables and RLS policies.
+6. Watch the Launch activity panel record those operations through Postgres triggers.
+7. Open `/<your-slug>` to inspect the public launch page backed by the same Supabase tables and RLS policies.
 
 ## Local demo fallback
 
@@ -124,7 +127,7 @@ The default UI includes media placeholders so a startup can attach its own produ
 
 ## Supabase schema
 
-LaunchBase creates 9 core tables:
+LaunchBase creates 10 core tables:
 
 1. `profiles`
 2. `organizations`
@@ -135,6 +138,7 @@ LaunchBase creates 9 core tables:
 7. `feature_votes`
 8. `roadmap_items`
 9. `changelogs`
+10. `launch_activity_events`
 
 Every product row is scoped by `organization_id`. RLS policies define the public, authenticated, member, owner, and admin access model.
 
@@ -145,6 +149,7 @@ See [docs/supabase.md](./docs/supabase.md) for the architecture walkthrough.
 - Anonymous users can read the public launch surface, join the waitlist, and read aggregate vote counts.
 - Authenticated users can update their own profile, create a workspace, accept invitations, submit feature requests, and vote.
 - Organization owners/admins can invite teammates, read waitlist PII, update waitlist status, manage roadmap data, and publish changelog entries.
+- Launch activity is written by Postgres triggers and readable only by organization owners/admins.
 - Invitation tokens are hashed in Postgres; raw invite links are returned only when created or rotated.
 - Raw vote rows are not publicly readable; public pages use `get_feature_vote_counts(org_id)`.
 - The app never uses `service_role` in Next.js client or server components.

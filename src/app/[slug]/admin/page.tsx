@@ -3,11 +3,13 @@ import { notFound, redirect } from "next/navigation";
 import { AccessDenied } from "@/components/admin/access-denied";
 import { ChangelogPanel } from "@/components/admin/changelog-panel";
 import { FeatureTriagePanel } from "@/components/admin/feature-triage-panel";
+import { LaunchActivityPanel } from "@/components/admin/launch-activity-panel";
 import { RoadmapPanel } from "@/components/admin/roadmap-panel";
 import { TeamInvitationsPanel } from "@/components/admin/team-invitations-panel";
 import { WaitlistPanel } from "@/components/admin/waitlist-panel";
 import type { Changelog } from "@/domain/entities/changelog";
 import type { FeatureRequest } from "@/domain/entities/feature-request";
+import type { LaunchActivityEvent } from "@/domain/entities/launch-activity-event";
 import type { OrganizationInvitation } from "@/domain/entities/organization-invitation";
 import type { RoadmapItem } from "@/domain/entities/roadmap-item";
 import type { WaitlistEntry } from "@/domain/entities/waitlist-entry";
@@ -482,6 +484,7 @@ export default async function AdminPage({ params }: AdminPageProps) {
     { data: roadmapItems },
     { data: changelogs },
     { data: invitations },
+    { data: activityEvents },
   ] = await Promise.all([
     supabase
       .from("waitlist_entries")
@@ -518,6 +521,14 @@ export default async function AdminPage({ params }: AdminPageProps) {
       )
       .eq("organization_id", org.id)
       .order("created_at", { ascending: false }),
+    supabase
+      .from("launch_activity_events")
+      .select(
+        "id, organization_id, actor_user_id, event_type, subject_type, subject_id, subject_label, metadata, created_at"
+      )
+      .eq("organization_id", org.id)
+      .order("created_at", { ascending: false })
+      .limit(12),
   ]);
 
   const waitlist = (waitlistEntries ?? []) as WaitlistEntry[];
@@ -525,6 +536,7 @@ export default async function AdminPage({ params }: AdminPageProps) {
   const roadmap = (roadmapItems ?? []) as RoadmapItem[];
   const allChangelogs = (changelogs ?? []) as Changelog[];
   const orgInvitations = (invitations ?? []) as OrganizationInvitation[];
+  const activity = (activityEvents ?? []) as LaunchActivityEvent[];
   const featureIds = features.map((item) => item.id);
 
   let voteCounts: Record<string, number> = {};
@@ -687,6 +699,8 @@ export default async function AdminPage({ params }: AdminPageProps) {
               organizationId={org.id}
               initialInvitations={orgInvitations}
             />
+
+            <LaunchActivityPanel events={activity} />
 
             <OperationsPanel
               title="Roadmap status overview"

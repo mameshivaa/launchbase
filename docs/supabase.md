@@ -23,7 +23,8 @@ organizations (tenant root, public slug)
     ├── feature_requests
     ├── feature_votes → feature_requests, profiles
     ├── roadmap_items
-    └── changelogs
+    ├── changelogs
+    └── launch_activity_events (trigger-recorded admin timeline)
 ```
 
 Demo organization (from seed):
@@ -65,9 +66,10 @@ Policy intent:
 | `organization_invitations` | — | — | create, read, revoke, rotate links |
 | `waitlist_entries` | insert | insert | read, update status |
 | `feature_requests` | read; insert with email | read; insert as self | update/triage |
-| `feature_votes` | read rows | insert/delete own vote | — |
+| `feature_votes` | aggregate RPC only | insert/delete own vote; read own rows | inspect org votes |
 | `roadmap_items` | read | read | insert/update/delete |
 | `changelogs` | read if `published_at` set | same | read all + CRUD |
+| `launch_activity_events` | — | — | read |
 
 ### 3. `20260701140000_table_grants.sql`
 
@@ -98,6 +100,16 @@ Creates:
 - `rotate_organization_invitation_token(invitation_id)` — admin-only RPC that replaces the hash and returns a fresh one-time raw token
 - `revoke_organization_invitation(invitation_id)` — admin-only RPC
 - `accept_organization_invitation(token)` — authenticated RPC that checks token hash, expiry, status, and email match before creating membership
+
+### 6. `20260702110000_launch_activity_events.sql`
+
+Creates:
+
+- `launch_activity_events` — admin-only operational timeline scoped by organization
+- `log_launch_activity(...)` — private helper used by triggers, not callable by public roles
+- table triggers for waitlist joins/status changes, feature request creation/triage, roadmap creation/status/delete, changelog draft/publish, and team invite lifecycle changes
+
+The app does not send audit events manually. Supabase Postgres records them at the data boundary, then RLS exposes the timeline only to owners/admins.
 
 ## Auth → profile flow
 
@@ -185,6 +197,19 @@ Confirm in Studio: **Table Editor → waitlist_entries**.
 
 Seed includes draft **v0.3.0** — visible only to bootstrapped admin until published.
 
+## Launch activity trail
+
+The admin dashboard includes a Launch activity panel backed by `launch_activity_events`.
+
+Events are inserted by database triggers, which means the history is recorded even if a future UI, script, or integration changes the same tables through Supabase APIs. This is the concrete Supabase pattern LaunchBase demonstrates:
+
+1. PostgREST accepts the user action.
+2. RLS decides whether the row mutation is allowed.
+3. Postgres trigger writes an activity event with `auth.uid()` as the actor.
+4. RLS on `launch_activity_events` allows only organization owners/admins to read it.
+
+Anonymous users cannot read this table, and app runtime code does not need a `service_role` key to create the activity trail.
+
 ## Local configuration
 
 `supabase/config.toml` highlights for local development:
@@ -213,15 +238,16 @@ Never expose `service_role`, database passwords, or JWT secrets in frontend code
 
 ## Suggested exploration path (video / self-study)
 
-1. `supabase db reset` — watch three migrations apply
+1. `supabase db reset` — watch migrations apply
 2. Studio → tables + seed rows
 3. Public page as incognito — waitlist signup
 4. Sign up → verify `profiles` row
 5. Create a workspace from `/account` → admin dashboard
 6. Create a team invite → copy link → accept as matching email
-7. Non-admin user → access denied on `/admin`
-8. Run `npm run test:rls` with local Supabase keys exported
-9. Read the migrations alongside Studio **Authentication → Policies**
+7. Update waitlist, feature, roadmap, or changelog data → verify Launch activity records it
+8. Non-admin user → access denied on `/admin`
+9. Run `npm run test:rls` with local Supabase keys exported
+10. Read the migrations alongside Studio **Authentication → Policies**
 
 ## Known follow-ups (not implemented)
 
