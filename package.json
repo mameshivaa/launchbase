@@ -3,6 +3,27 @@
   "version": "0.1.0",
   "private": false,
   "description": "Open-source launch operations starter for startups, built with Supabase Auth, RLS, and Next.js",
+  "keywords": [
+    "supabase",
+    "nextjs",
+    "postgres",
+    "rls",
+    "startup",
+    "launch",
+    "waitlist",
+    "roadmap",
+    "changelog",
+    "oss-starter"
+  ],
+  "homepage": "https://github.com/mameshivaa/launchbase#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mameshivaa/launchbase.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mameshivaa/launchbase/issues"
+  },
+  "license": "MIT",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

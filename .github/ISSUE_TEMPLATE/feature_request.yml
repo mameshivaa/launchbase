@@ -1,0 +1,39 @@
+name: Feature request
+description: Suggest a practical launch-operations improvement.
+title: "feat: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: workflow
+    attributes:
+      label: Startup workflow
+      description: What founder, PM, or developer workflow should this improve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: Keep it scoped to an OSS starter that teams can fork.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Waitlist
+        - Feature requests / votes
+        - Roadmap
+        - Changelog
+        - Team invitations
+        - Supabase architecture
+        - Deployment
+        - Docs
+    validations:
+      required: true
+  - type: textarea
+    id: constraints
+    attributes:
+      label: Constraints
+      description: Note any RLS, schema, UI, or deployment tradeoffs.

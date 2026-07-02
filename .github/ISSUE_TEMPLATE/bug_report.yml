@@ -1,0 +1,63 @@
+name: Bug report
+description: Report a reproducible LaunchBase issue.
+title: "bug: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve LaunchBase. Do not include secrets, invite tokens, service role keys, or private user data.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What broke?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      description: Include the route, role, and command sequence if relevant.
+      placeholder: |
+        1. Run ...
+        2. Open ...
+        3. Click ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Supabase / RLS
+        - Auth / account
+        - Admin dashboard
+        - Public launch page
+        - Team invitations
+        - Docs / setup
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: checks
+    attributes:
+      label: Checks run
+      description: Paste the pass/fail summary, not secret env values.
+      placeholder: |
+        npm run lint
+        npm run build
+        supabase db reset
+        npm run test:rls

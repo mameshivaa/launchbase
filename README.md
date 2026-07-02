@@ -1,6 +1,11 @@
 # LaunchBase
 
-**Build your startup launch OS on Supabase.**
+[![CI](https://github.com/mameshivaa/launchbase/actions/workflows/ci.yml/badge.svg)](https://github.com/mameshivaa/launchbase/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-111827.svg)](./LICENSE)
+[![Built with Supabase](https://img.shields.io/badge/Supabase-Auth%20%2B%20RLS%20%2B%20RPC-3ECF8E.svg)](https://supabase.com)
+[![Next.js](https://img.shields.io/badge/Next.js-16-black.svg)](https://nextjs.org)
+
+**Fork a launch operations dashboard where Postgres is the permission system.**
 
 For founders and developers who want to collect waitlist demand, turn feature requests into roadmap decisions, and publish launch momentum without building auth, permissions, and admin plumbing from scratch.
 
@@ -9,6 +14,19 @@ For founders and developers who want to collect waitlist demand, turn feature re
 LaunchBase is an open-source, local-first starter for launch operations. It combines a public startup page with an internal dashboard for waitlists, feature requests, votes, roadmap planning, and changelog publishing.
 
 Bring your own product screenshots, edit one config file, run Supabase locally, and start from a working Auth + RLS foundation.
+
+## Why people fork it
+
+- **Founders** get a practical launch dashboard instead of a static landing-page template.
+- **Product teams** get waitlist, feedback, votes, roadmap, changelog, and team access in one small codebase.
+- **Supabase learners** get a real Auth + RLS + RPC reference app with tests, not a toy todo list.
+- **OSS builders** get a readable starter that keeps `service_role` out of the app runtime.
+
+## Screenshots
+
+| Public launch page | Admin operations dashboard |
+| --- | --- |
+| ![LaunchBase public startup page screenshot](./docs/assets/launchbase-public-demo.png) | ![LaunchBase admin dashboard screenshot](./docs/assets/launchbase-admin-dashboard.png) |
 
 ## Use it when
 
@@ -29,13 +47,9 @@ Bring your own product screenshots, edit one config file, run Supabase locally, 
 | Customization | Brand copy, colors, CTA links, badges, and media slots in one config file |
 | Supabase foundation | Local CLI, migrations, seed data, PostgREST, Auth, and RLS policies |
 
-![LaunchBase public startup page screenshot](./docs/assets/launchbase-public-demo.png)
-
 ## Why Supabase is doing real work here
 
 LaunchBase is intentionally Supabase-native. The point is not only that it stores rows in Postgres; Supabase removes whole categories of app code that an early startup usually should not hand-roll.
-
-![LaunchBase admin dashboard screenshot](./docs/assets/launchbase-admin-dashboard.png)
 
 Concretely:
 
@@ -207,7 +221,16 @@ LaunchBase is intentionally small and readable. These are not included yet:
 - Billing
 - Managed hosted SaaS operations
 - Built-in email provider integration
-- Billing
+
+## Contributing
+
+LaunchBase is intentionally scoped as an OSS starter, not a hosted SaaS. Useful contributions include tighter RLS tests, better seed data, production deploy notes, and workflow improvements that keep the codebase easy to fork.
+
+Read [CONTRIBUTING.md](./CONTRIBUTING.md) before opening a PR.
+
+## Security
+
+If you find an auth, RLS, invite-token, or data exposure issue, please do not open a public issue. Follow [SECURITY.md](./SECURITY.md).
 
 ## License
 
