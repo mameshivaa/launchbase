@@ -2,6 +2,11 @@
 
 import { useState } from "react";
 import type { OrganizationInvitation } from "@/domain/entities/organization-invitation";
+import {
+  getGenericMutationError,
+  isValidEmail,
+  normalizeEmail,
+} from "@/lib/security/input";
 import { createClient } from "@/lib/supabase/client";
 
 type TeamInvitationsPanelProps = {
@@ -50,7 +55,7 @@ function getInviteError(message: string): string {
     return "Enter a valid invite email.";
   }
 
-  return message;
+  return getGenericMutationError(message);
 }
 
 export function TeamInvitationsPanel({
@@ -71,6 +76,12 @@ export function TeamInvitationsPanel({
     setError(null);
     setNotice(null);
 
+    const normalizedEmail = normalizeEmail(email);
+    if (!isValidEmail(normalizedEmail)) {
+      setError("Enter a valid invite email.");
+      return;
+    }
+
     setCreating(true);
 
     const supabase = createClient();
@@ -78,7 +89,7 @@ export function TeamInvitationsPanel({
       "create_organization_invitation",
       {
         org_id: organizationId,
-        invite_email: email.trim(),
+        invite_email: normalizedEmail,
         invite_role: role,
       }
     );
@@ -137,7 +148,7 @@ export function TeamInvitationsPanel({
     setBusyId(null);
 
     if (rpcError) {
-      setError(rpcError.message);
+      setError(getGenericMutationError(rpcError.message));
       return;
     }
 
@@ -165,7 +176,7 @@ export function TeamInvitationsPanel({
     setBusyId(null);
 
     if (rpcError) {
-      setError(rpcError.message);
+      setError(getGenericMutationError(rpcError.message));
       return;
     }
 

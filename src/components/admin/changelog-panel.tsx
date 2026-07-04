@@ -3,6 +3,14 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { Changelog } from "@/domain/entities/changelog";
+import {
+  getGenericMutationError,
+  getOptionalTextError,
+  getRequiredTextError,
+  INPUT_LIMITS,
+  normalizeMultilineForValidation,
+  normalizeSingleLineForValidation,
+} from "@/lib/security/input";
 import { createClient } from "@/lib/supabase/client";
 
 type ChangelogPanelProps = {
@@ -51,8 +59,27 @@ export function ChangelogPanel({
     event.preventDefault();
     setError(null);
 
-    if (!newDraft.title.trim() || !newDraft.body.trim()) {
-      setError("Changelog title and body are required.");
+    const normalizedTitle = normalizeSingleLineForValidation(newDraft.title);
+    const normalizedBody = normalizeMultilineForValidation(newDraft.body);
+    const normalizedVersion = normalizeSingleLineForValidation(newDraft.version);
+    const titleError = getRequiredTextError(
+      "Changelog title",
+      normalizedTitle,
+      INPUT_LIMITS.title
+    );
+    const bodyError = getRequiredTextError(
+      "Changelog body",
+      normalizedBody,
+      INPUT_LIMITS.changelogBody
+    );
+    const versionError = getOptionalTextError(
+      "Changelog version",
+      normalizedVersion,
+      INPUT_LIMITS.version
+    );
+
+    if (titleError || bodyError || versionError) {
+      setError(titleError ?? bodyError ?? versionError);
       return;
     }
 
@@ -63,9 +90,9 @@ export function ChangelogPanel({
       .from("changelogs")
       .insert({
         organization_id: organizationId,
-        title: newDraft.title.trim(),
-        version: newDraft.version.trim() || null,
-        body: newDraft.body.trim(),
+        title: normalizedTitle,
+        version: normalizedVersion || null,
+        body: normalizedBody,
         published_at: null,
       })
       .select("id, organization_id, title, body, version, published_at, created_at, updated_at")
@@ -74,7 +101,7 @@ export function ChangelogPanel({
     setCreating(false);
 
     if (insertError) {
-      setError(insertError.message);
+      setError(getGenericMutationError(insertError.message));
       return;
     }
 
@@ -90,8 +117,29 @@ export function ChangelogPanel({
 
   async function handleSave(changelogId: string) {
     const draft = drafts[changelogId];
-    if (!draft?.title.trim() || !draft.body.trim()) {
-      setError("Changelog title and body are required.");
+    const normalizedTitle = normalizeSingleLineForValidation(draft?.title ?? "");
+    const normalizedBody = normalizeMultilineForValidation(draft?.body ?? "");
+    const normalizedVersion = normalizeSingleLineForValidation(
+      draft?.version ?? ""
+    );
+    const titleError = getRequiredTextError(
+      "Changelog title",
+      normalizedTitle,
+      INPUT_LIMITS.title
+    );
+    const bodyError = getRequiredTextError(
+      "Changelog body",
+      normalizedBody,
+      INPUT_LIMITS.changelogBody
+    );
+    const versionError = getOptionalTextError(
+      "Changelog version",
+      normalizedVersion,
+      INPUT_LIMITS.version
+    );
+
+    if (titleError || bodyError || versionError) {
+      setError(titleError ?? bodyError ?? versionError);
       return;
     }
 
@@ -102,16 +150,16 @@ export function ChangelogPanel({
     const { error: updateError } = await supabase
       .from("changelogs")
       .update({
-        title: draft.title.trim(),
-        version: draft.version.trim() || null,
-        body: draft.body.trim(),
+        title: normalizedTitle,
+        version: normalizedVersion || null,
+        body: normalizedBody,
       })
       .eq("id", changelogId);
 
     setSavingId(null);
 
     if (updateError) {
-      setError(updateError.message);
+      setError(getGenericMutationError(updateError.message));
       return;
     }
 
@@ -120,9 +168,9 @@ export function ChangelogPanel({
         entry.id === changelogId
           ? {
               ...entry,
-              title: draft.title.trim(),
-              version: draft.version.trim() || null,
-              body: draft.body.trim(),
+              title: normalizedTitle,
+              version: normalizedVersion || null,
+              body: normalizedBody,
             }
           : entry
       )
@@ -143,7 +191,7 @@ export function ChangelogPanel({
     setPublishingId(null);
 
     if (updateError) {
-      setError(updateError.message);
+      setError(getGenericMutationError(updateError.message));
       return;
     }
 

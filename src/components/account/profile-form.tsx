@@ -3,6 +3,12 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { Profile } from "@/domain/entities/profile";
+import {
+  getGenericMutationError,
+  getOptionalTextError,
+  INPUT_LIMITS,
+  normalizeSingleLineForValidation,
+} from "@/lib/security/input";
 import { createClient } from "@/lib/supabase/client";
 
 type ProfileFormProps = {
@@ -30,16 +36,29 @@ export function ProfileForm({
     setMessage(null);
     setLoading(true);
 
+    const normalizedDisplayName =
+      normalizeSingleLineForValidation(displayName);
+    const displayNameError = getOptionalTextError(
+      "Display name",
+      normalizedDisplayName,
+      INPUT_LIMITS.shortText
+    );
+    if (displayNameError) {
+      setError(displayNameError);
+      setLoading(false);
+      return;
+    }
+
     const supabase = createClient();
     const { error: updateError } = await supabase
       .from("profiles")
-      .update({ display_name: displayName.trim() || null })
+      .update({ display_name: normalizedDisplayName || null })
       .eq("id", initialProfile.id);
 
     setLoading(false);
 
     if (updateError) {
-      setError(updateError.message);
+      setError(getGenericMutationError(updateError.message));
       return;
     }
 

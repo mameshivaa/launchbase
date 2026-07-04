@@ -3,6 +3,14 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { RoadmapItem } from "@/domain/entities/roadmap-item";
+import {
+  getGenericMutationError,
+  getOptionalTextError,
+  getRequiredTextError,
+  INPUT_LIMITS,
+  normalizeMultilineForValidation,
+  normalizeSingleLineForValidation,
+} from "@/lib/security/input";
 import { createClient } from "@/lib/supabase/client";
 
 const ROADMAP_STATUSES = ["planned", "in_progress", "done", "cancelled"] as const;
@@ -53,8 +61,23 @@ export function RoadmapPanel({ organizationId, initialItems }: RoadmapPanelProps
     event.preventDefault();
     setError(null);
 
-    if (!newDraft.title.trim()) {
-      setError("Roadmap title is required.");
+    const normalizedTitle = normalizeSingleLineForValidation(newDraft.title);
+    const normalizedDescription = normalizeMultilineForValidation(
+      newDraft.description
+    );
+    const titleError = getRequiredTextError(
+      "Roadmap title",
+      normalizedTitle,
+      INPUT_LIMITS.title
+    );
+    const descriptionError = getOptionalTextError(
+      "Roadmap description",
+      normalizedDescription,
+      INPUT_LIMITS.description
+    );
+
+    if (titleError || descriptionError) {
+      setError(titleError ?? descriptionError);
       return;
     }
 
@@ -65,8 +88,8 @@ export function RoadmapPanel({ organizationId, initialItems }: RoadmapPanelProps
       .from("roadmap_items")
       .insert({
         organization_id: organizationId,
-        title: newDraft.title.trim(),
-        description: newDraft.description.trim() || null,
+        title: normalizedTitle,
+        description: normalizedDescription || null,
         status: newDraft.status,
         sort_order: Number(newDraft.sort_order) || 0,
         target_date: newDraft.target_date || null,
@@ -79,7 +102,7 @@ export function RoadmapPanel({ organizationId, initialItems }: RoadmapPanelProps
     setCreating(false);
 
     if (insertError) {
-      setError(insertError.message);
+      setError(getGenericMutationError(insertError.message));
       return;
     }
 
@@ -97,8 +120,23 @@ export function RoadmapPanel({ organizationId, initialItems }: RoadmapPanelProps
 
   async function saveItem(itemId: string) {
     const draft = drafts[itemId];
-    if (!draft?.title.trim()) {
-      setError("Roadmap title is required.");
+    const normalizedTitle = normalizeSingleLineForValidation(draft?.title ?? "");
+    const normalizedDescription = normalizeMultilineForValidation(
+      draft?.description ?? ""
+    );
+    const titleError = getRequiredTextError(
+      "Roadmap title",
+      normalizedTitle,
+      INPUT_LIMITS.title
+    );
+    const descriptionError = getOptionalTextError(
+      "Roadmap description",
+      normalizedDescription,
+      INPUT_LIMITS.description
+    );
+
+    if (titleError || descriptionError) {
+      setError(titleError ?? descriptionError);
       return;
     }
 
@@ -109,8 +147,8 @@ export function RoadmapPanel({ organizationId, initialItems }: RoadmapPanelProps
     const { error: updateError } = await supabase
       .from("roadmap_items")
       .update({
-        title: draft.title.trim(),
-        description: draft.description.trim() || null,
+        title: normalizedTitle,
+        description: normalizedDescription || null,
         status: draft.status,
         sort_order: Number(draft.sort_order) || 0,
         target_date: draft.target_date || null,
@@ -120,7 +158,7 @@ export function RoadmapPanel({ organizationId, initialItems }: RoadmapPanelProps
     setBusyId(null);
 
     if (updateError) {
-      setError(updateError.message);
+      setError(getGenericMutationError(updateError.message));
       return;
     }
 
@@ -130,8 +168,8 @@ export function RoadmapPanel({ organizationId, initialItems }: RoadmapPanelProps
           item.id === itemId
             ? {
                 ...item,
-                title: draft.title.trim(),
-                description: draft.description.trim() || null,
+                title: normalizedTitle,
+                description: normalizedDescription || null,
                 status: draft.status,
                 sort_order: Number(draft.sort_order) || 0,
                 target_date: draft.target_date || null,
@@ -156,7 +194,7 @@ export function RoadmapPanel({ organizationId, initialItems }: RoadmapPanelProps
     setBusyId(null);
 
     if (deleteError) {
-      setError(deleteError.message);
+      setError(getGenericMutationError(deleteError.message));
       return;
     }
 

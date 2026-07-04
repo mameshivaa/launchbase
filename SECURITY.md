@@ -28,6 +28,7 @@ supabase db reset
 npm run test:rls
 npm run lint
 npm run build
+npm run security:headers
 ```
 
 Also confirm these production settings:
@@ -37,3 +38,8 @@ Also confirm these production settings:
 - Email confirmations are enabled for real users.
 - `SUPABASE_SERVICE_ROLE_KEY` is not present in frontend or Vercel runtime env.
 - RLS remains enabled on all product tables.
+
+See [docs/security-checklist.md](./docs/security-checklist.md) for the
+vulnerability-class checklist used by this starter. See
+[docs/security-operations.md](./docs/security-operations.md) for production
+settings that must be applied outside the repository.

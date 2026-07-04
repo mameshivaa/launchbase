@@ -2,6 +2,14 @@
 
 import { useState } from "react";
 import { SectionHeader } from "@/components/public/section-header";
+import {
+  getGenericMutationError,
+  getOptionalTextError,
+  INPUT_LIMITS,
+  isValidEmail,
+  normalizeEmail,
+  normalizeSingleLineForValidation,
+} from "@/lib/security/input";
 import { createClient } from "@/lib/supabase/client";
 
 const WAITLIST_SOURCE_PUBLIC_PAGE = "public_page";
@@ -17,7 +25,7 @@ function getWaitlistError(message: string): string {
     return "This email is already on the waitlist.";
   }
 
-  return message;
+  return getGenericMutationError(message);
 }
 
 export function WaitlistForm({ organizationId }: WaitlistFormProps) {
@@ -32,9 +40,26 @@ export function WaitlistForm({ organizationId }: WaitlistFormProps) {
     setError(null);
     setSuccess(false);
 
-    const trimmedEmail = email.trim();
-    if (!trimmedEmail) {
+    const normalizedEmail = normalizeEmail(email);
+    const normalizedName = normalizeSingleLineForValidation(name);
+
+    if (!normalizedEmail) {
       setError("Email is required.");
+      return;
+    }
+
+    if (!isValidEmail(normalizedEmail)) {
+      setError("Enter a valid email address.");
+      return;
+    }
+
+    const nameError = getOptionalTextError(
+      "Name",
+      normalizedName,
+      INPUT_LIMITS.shortText
+    );
+    if (nameError) {
+      setError(nameError);
       return;
     }
 
@@ -43,8 +68,8 @@ export function WaitlistForm({ organizationId }: WaitlistFormProps) {
     const supabase = createClient();
     const { error: insertError } = await supabase.from("waitlist_entries").insert({
       organization_id: organizationId,
-      email: trimmedEmail,
-      name: name.trim() || null,
+      email: normalizedEmail,
+      name: normalizedName || null,
       source: WAITLIST_SOURCE_PUBLIC_PAGE,
     });
 

@@ -168,6 +168,12 @@ See [docs/supabase.md](./docs/supabase.md) for the architecture walkthrough.
 - Raw vote rows are not publicly readable; public pages use `get_feature_vote_counts(org_id)`.
 - The app never uses `service_role` in Next.js client or server components.
 - The browser and server use only the Supabase anon key plus the current user session.
+- The app sends baseline security headers through Next.js `proxy.ts`, including CSP, clickjacking protection, content sniffing protection, referrer policy, and a restrictive permissions policy.
+- Publicly writable inputs are normalized in the UI and bounded again by Postgres CHECK constraints.
+
+Use [docs/security-checklist.md](./docs/security-checklist.md) and
+[docs/security-operations.md](./docs/security-operations.md) before publishing
+your fork.
 
 ## Project structure
 
@@ -197,6 +203,7 @@ scripts/local/
 | `npm run dev` | Start the Next.js dev server |
 | `npm run build` | Build the app for production |
 | `npm run lint` | Run ESLint |
+| `npm run security:headers` | Check security headers on a running app |
 | `npm run test:rls` | Run local RLS smoke tests against Supabase |
 | `supabase start` | Start the local Supabase stack |
 | `supabase db reset` | Reapply migrations and seed data |

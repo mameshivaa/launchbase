@@ -29,5 +29,13 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Audit dependencies
+        run: npm audit --audit-level=moderate
+
       - name: Build
         run: npm run build
+
+      - name: Check security headers
+        run: |
+          npm run start &
+          node scripts/security/header-check.mjs

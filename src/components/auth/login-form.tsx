@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { normalizeEmail } from "@/lib/security/input";
 import { createClient } from "@/lib/supabase/client";
 
 function getSafeNextUrl(nextUrl?: string): string {
@@ -30,14 +31,14 @@ export function LoginForm({ nextUrl }: LoginFormProps) {
 
     const supabase = createClient();
     const { error: signInError } = await supabase.auth.signInWithPassword({
-      email,
+      email: normalizeEmail(email),
       password,
     });
 
     setLoading(false);
 
     if (signInError) {
-      setError(signInError.message);
+      setError("Invalid email or password.");
       return;
     }
 

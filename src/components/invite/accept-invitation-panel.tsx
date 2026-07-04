@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { getGenericMutationError } from "@/lib/security/input";
 import { createClient } from "@/lib/supabase/client";
 
 type AcceptInvitationPanelProps = {
@@ -29,7 +30,7 @@ function getInviteAcceptError(message: string): string {
     return "This invitation is no longer pending.";
   }
 
-  return message;
+  return getGenericMutationError(message);
 }
 
 export function AcceptInvitationPanel({

@@ -7,6 +7,7 @@ import {
   type WaitlistEntry,
   type WaitlistStatus,
 } from "@/domain/entities/waitlist-entry";
+import { getGenericMutationError } from "@/lib/security/input";
 import { createClient } from "@/lib/supabase/client";
 
 type WaitlistPanelProps = {
@@ -62,7 +63,7 @@ export function WaitlistPanel({ initialEntries }: WaitlistPanelProps) {
     setUpdatingId(null);
 
     if (updateError) {
-      setError(updateError.message);
+      setError(getGenericMutationError(updateError.message));
       return;
     }
 

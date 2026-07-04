@@ -24,11 +24,15 @@
     "url": "https://github.com/mameshivaa/launchbase/issues"
   },
   "license": "MIT",
+  "overrides": {
+    "postcss": "^8.5.16"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "security:headers": "node scripts/security/header-check.mjs",
     "test:rls": "node scripts/local/rls-smoke-test.mjs"
   },
   "dependencies": {

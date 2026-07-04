@@ -6,6 +6,14 @@ import { useState } from "react";
 import { SectionHeader } from "@/components/public/section-header";
 import { StatusBadge } from "@/components/public/status-badge";
 import type { FeatureRequest } from "@/domain/entities/feature-request";
+import {
+  getGenericMutationError,
+  getOptionalTextError,
+  getRequiredTextError,
+  INPUT_LIMITS,
+  normalizeMultilineForValidation,
+  normalizeSingleLineForValidation,
+} from "@/lib/security/input";
 import { createClient } from "@/lib/supabase/client";
 
 type FeatureRequestsSectionProps = {
@@ -105,9 +113,21 @@ export function FeatureRequestsSection({
     setSubmitError(null);
     setSubmitSuccess(false);
 
-    const trimmedTitle = title.trim();
-    if (!trimmedTitle) {
-      setSubmitError("Title is required.");
+    const normalizedTitle = normalizeSingleLineForValidation(title);
+    const normalizedDescription = normalizeMultilineForValidation(description);
+    const titleError = getRequiredTextError(
+      "Title",
+      normalizedTitle,
+      INPUT_LIMITS.title
+    );
+    const descriptionError = getOptionalTextError(
+      "Description",
+      normalizedDescription,
+      INPUT_LIMITS.description
+    );
+
+    if (titleError || descriptionError) {
+      setSubmitError(titleError ?? descriptionError);
       return;
     }
 
@@ -118,8 +138,8 @@ export function FeatureRequestsSection({
       .from("feature_requests")
       .insert({
         organization_id: organizationId,
-        title: trimmedTitle,
-        description: description.trim() || null,
+        title: normalizedTitle,
+        description: normalizedDescription || null,
         created_by: userId,
       })
       .select(
@@ -130,7 +150,7 @@ export function FeatureRequestsSection({
     setSubmitLoading(false);
 
     if (error) {
-      setSubmitError(error.message);
+      setSubmitError(getGenericMutationError(error.message));
       return;
     }
 
@@ -168,7 +188,7 @@ export function FeatureRequestsSection({
     setVoteLoadingId(null);
 
     if (error) {
-      setVoteError(error.message);
+      setVoteError(getGenericMutationError(error.message));
       return;
     }
 

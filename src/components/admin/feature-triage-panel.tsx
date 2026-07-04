@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import type { FeatureRequest } from "@/domain/entities/feature-request";
+import { getGenericMutationError } from "@/lib/security/input";
 import { createClient } from "@/lib/supabase/client";
 
 const FEATURE_STATUSES = [
@@ -59,7 +60,7 @@ export function FeatureTriagePanel({
     setUpdatingId(null);
 
     if (updateError) {
-      setError(updateError.message);
+      setError(getGenericMutationError(updateError.message));
       return;
     }
 

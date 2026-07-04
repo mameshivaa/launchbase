@@ -3,15 +3,32 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import {
+  getGenericMutationError,
+  getOptionalTextError,
+  INPUT_LIMITS,
+  isValidEmail,
+  normalizeEmail,
+  normalizeSingleLineForValidation,
+} from "@/lib/security/input";
 import { createClient } from "@/lib/supabase/client";
 
-const MIN_PASSWORD_LENGTH = 6;
+const MIN_PASSWORD_LENGTH = 8;
 
-function getSignUpValidationError(email: string, password: string): string | null {
-  const trimmedEmail = email.trim();
+function getSignUpValidationError(
+  email: string,
+  password: string,
+  displayName: string
+): string | null {
+  const normalizedEmail = normalizeEmail(email);
+  const normalizedDisplayName = normalizeSingleLineForValidation(displayName);
 
-  if (!trimmedEmail) {
+  if (!normalizedEmail) {
     return "Email is required.";
+  }
+
+  if (!isValidEmail(normalizedEmail)) {
+    return "Enter a valid email address.";
   }
 
   if (!password) {
@@ -19,7 +36,16 @@ function getSignUpValidationError(email: string, password: string): string | nul
   }
 
   if (password.length < MIN_PASSWORD_LENGTH) {
-    return "Password must be at least 6 characters.";
+    return "Password must be at least 8 characters.";
+  }
+
+  const displayNameError = getOptionalTextError(
+    "Display name",
+    normalizedDisplayName,
+    INPUT_LIMITS.shortText
+  );
+  if (displayNameError) {
+    return displayNameError;
   }
 
   return null;
@@ -37,12 +63,12 @@ function getSignUpAuthError(message: string): string {
     (lower.includes("at least") ||
       lower.includes("short") ||
       lower.includes("weak") ||
-      lower.includes("6"))
+      lower.includes("8"))
   ) {
-    return "Password must be at least 6 characters.";
+    return "Password must be at least 8 characters.";
   }
 
-  return message;
+  return getGenericMutationError(message);
 }
 
 export function SignUpForm() {
@@ -57,7 +83,11 @@ export function SignUpForm() {
     event.preventDefault();
     setError(null);
 
-    const validationError = getSignUpValidationError(email, password);
+    const validationError = getSignUpValidationError(
+      email,
+      password,
+      displayName
+    );
     if (validationError) {
       setError(validationError);
       return;
@@ -67,11 +97,12 @@ export function SignUpForm() {
 
     const supabase = createClient();
     const { error: signUpError } = await supabase.auth.signUp({
-      email: email.trim(),
+      email: normalizeEmail(email),
       password,
       options: {
         data: {
-          display_name: displayName.trim() || null,
+          display_name:
+            normalizeSingleLineForValidation(displayName) || null,
         },
       },
     });

@@ -19,7 +19,7 @@ const waitlistEmail = `lead-${runId}@example.invalid`;
 const password = "password123";
 const slug = `rls-smoke-${runId}`;
 const createdUsers = [];
-let createdOrganizationId = null;
+const createdOrganizationIds = [];
 
 function headers(key, token = key) {
   return {
@@ -117,7 +117,57 @@ try {
       body: JSON.stringify({ org_name: "RLS Smoke", org_slug: slug }),
     })
   );
-  createdOrganizationId = organization.id;
+  createdOrganizationIds.push(organization.id);
+
+  await assertBlocked(
+    "authenticated user cannot create workspace with invalid slug",
+    request("/rest/v1/rpc/create_organization", {
+      method: "POST",
+      headers: headers(anonKey, ownerAccessToken),
+      body: JSON.stringify({
+        org_name: "Invalid Slug Workspace",
+        org_slug: "Invalid Slug",
+      }),
+    })
+  );
+
+  await assertBlocked(
+    "authenticated user cannot create workspace with long name",
+    request("/rest/v1/rpc/create_organization", {
+      method: "POST",
+      headers: headers(anonKey, ownerAccessToken),
+      body: JSON.stringify({
+        org_name: "x".repeat(121),
+        org_slug: `long-name-${runId}`,
+      }),
+    })
+  );
+
+  const outsiderOrganization = await assertOk(
+    "outsider creates separate workspace",
+    request("/rest/v1/rpc/create_organization", {
+      method: "POST",
+      headers: headers(anonKey, outsiderAccessToken),
+      body: JSON.stringify({
+        org_name: "Outsider Workspace",
+        org_slug: `outsider-${runId}`,
+      }),
+    })
+  );
+  createdOrganizationIds.push(outsiderOrganization.id);
+
+  await assertBlocked(
+    "owner cannot administer separate workspace",
+    request("/rest/v1/rpc/create_organization_invitation", {
+      method: "POST",
+      headers: headers(anonKey, ownerAccessToken),
+      body: JSON.stringify({
+        org_id: outsiderOrganization.id,
+        invite_email: `cross-org-${runId}@example.invalid`,
+        invite_role: "member",
+      }),
+    })
+  );
 
   await assertBlocked(
     "non-admin cannot create invite",
@@ -128,6 +178,19 @@ try {
         org_id: organization.id,
         invite_email: `blocked-${runId}@example.invalid`,
         invite_role: "member",
+      }),
+    })
+  );
+
+  await assertBlocked(
+    "admin cannot create invite with invalid role",
+    request("/rest/v1/rpc/create_organization_invitation", {
+      method: "POST",
+      headers: headers(anonKey, ownerAccessToken),
+      body: JSON.stringify({
+        org_id: organization.id,
+        invite_email: `invalid-role-${runId}@example.invalid`,
+        invite_role: "owner",
       }),
     })
   );
@@ -184,6 +247,34 @@ try {
   }
 
   await assertOk(
+    "member role escalation attempt does not error",
+    request(
+      `/rest/v1/organization_members?organization_id=eq.${organization.id}&user_id=eq.${invitedUser.id}`,
+      {
+        method: "PATCH",
+        headers: { ...headers(anonKey, invitedAccessToken), Prefer: "return=minimal" },
+        body: JSON.stringify({ role: "admin" }),
+      }
+    )
+  );
+
+  const membershipAfterEscalationAttempt = await assertOk(
+    "member role escalation attempt has no effect",
+    request(
+      `/rest/v1/organization_members?organization_id=eq.${organization.id}&user_id=eq.${invitedUser.id}&select=role`,
+      { headers: headers(anonKey, ownerAccessToken) }
+    )
+  );
+
+  if (membershipAfterEscalationAttempt[0]?.role !== "member") {
+    throw new Error(
+      `Expected member role to remain member, got ${JSON.stringify(
+        membershipAfterEscalationAttempt
+      )}`
+    );
+  }
+
+  await assertOk(
     "anon can join waitlist before member update check",
     request("/rest/v1/waitlist_entries", {
       method: "POST",
@@ -192,6 +283,34 @@ try {
         organization_id: organization.id,
         email: waitlistEmail,
         name: "Smoke Lead",
+        source: "rls_smoke",
+      }),
+    })
+  );
+
+  await assertBlocked(
+    "anon cannot insert invalid waitlist email",
+    request("/rest/v1/waitlist_entries", {
+      method: "POST",
+      headers: { ...headers(anonKey), Prefer: "return=minimal" },
+      body: JSON.stringify({
+        organization_id: organization.id,
+        email: "not-an-email",
+        name: "Invalid Lead",
+        source: "rls_smoke",
+      }),
+    })
+  );
+
+  await assertBlocked(
+    "anon cannot insert long waitlist name",
+    request("/rest/v1/waitlist_entries", {
+      method: "POST",
+      headers: { ...headers(anonKey), Prefer: "return=minimal" },
+      body: JSON.stringify({
+        organization_id: organization.id,
+        email: `long-name-${runId}@example.invalid`,
+        name: "x".repeat(121),
         source: "rls_smoke",
       }),
     })
@@ -386,6 +505,19 @@ try {
     )
   )[0];
 
+  await assertBlocked(
+    "authenticated user cannot submit long feature title",
+    request("/rest/v1/feature_requests", {
+      method: "POST",
+      headers: { ...headers(anonKey, ownerAccessToken), Prefer: "return=minimal" },
+      body: JSON.stringify({
+        organization_id: organization.id,
+        title: "x".repeat(161),
+        created_by: ownerUser.id,
+      }),
+    })
+  );
+
   await assertOk(
     "authenticated user votes",
     request("/rest/v1/feature_votes", {
@@ -445,6 +577,19 @@ try {
     })
   );
 
+  await assertBlocked(
+    "owner cannot create roadmap item in separate workspace",
+    request("/rest/v1/roadmap_items", {
+      method: "POST",
+      headers: { ...headers(anonKey, ownerAccessToken), Prefer: "return=minimal" },
+      body: JSON.stringify({
+        organization_id: outsiderOrganization.id,
+        title: "Cross-org roadmap",
+        status: "planned",
+      }),
+    })
+  );
+
   const changelog = (
     await assertOk(
       "admin can create changelog draft",
@@ -460,6 +605,19 @@ try {
       })
     )
   )[0];
+
+  await assertBlocked(
+    "admin cannot create changelog with long body",
+    request("/rest/v1/changelogs", {
+      method: "POST",
+      headers: { ...headers(anonKey, ownerAccessToken), Prefer: "return=minimal" },
+      body: JSON.stringify({
+        organization_id: organization.id,
+        title: "Long changelog",
+        body: "x".repeat(8001),
+      }),
+    })
+  );
 
   await assertOk(
     "admin can publish changelog",
@@ -501,8 +659,8 @@ try {
     }
   }
 } finally {
-  if (createdOrganizationId) {
-    await request(`/rest/v1/organizations?id=eq.${createdOrganizationId}`, {
+  for (const organizationId of createdOrganizationIds) {
+    await request(`/rest/v1/organizations?id=eq.${organizationId}`, {
       method: "DELETE",
       headers: { ...headers(serviceRoleKey), Prefer: "return=minimal" },
     });

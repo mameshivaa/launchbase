@@ -2,6 +2,13 @@
 
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import {
+  getGenericMutationError,
+  getRequiredTextError,
+  INPUT_LIMITS,
+  isValidSlug,
+  normalizeSingleLineForValidation,
+} from "@/lib/security/input";
 import { createClient } from "@/lib/supabase/client";
 
 function slugify(value: string): string {
@@ -24,7 +31,7 @@ function getWorkspaceError(message: string): string {
     return "Use 3-63 lowercase letters, numbers, or hyphens for the slug.";
   }
 
-  return message;
+  return getGenericMutationError(message);
 }
 
 export function CreateWorkspaceForm() {
@@ -44,14 +51,19 @@ export function CreateWorkspaceForm() {
     event.preventDefault();
     setError(null);
 
-    const trimmedName = name.trim();
-    if (!trimmedName) {
-      setError("Workspace name is required.");
+    const normalizedName = normalizeSingleLineForValidation(name);
+    const nameError = getRequiredTextError(
+      "Workspace name",
+      normalizedName,
+      INPUT_LIMITS.shortText
+    );
+    if (nameError) {
+      setError(nameError);
       return;
     }
 
-    if (effectiveSlug.length < 3) {
-      setError("Workspace slug must be at least 3 characters.");
+    if (!isValidSlug(effectiveSlug)) {
+      setError("Use 3-63 lowercase letters, numbers, or hyphens for the slug.");
       return;
     }
 
@@ -59,7 +71,7 @@ export function CreateWorkspaceForm() {
 
     const supabase = createClient();
     const { data, error: rpcError } = await supabase.rpc("create_organization", {
-      org_name: trimmedName,
+      org_name: normalizedName,
       org_slug: effectiveSlug,
     });
 

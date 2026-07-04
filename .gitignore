@@ -33,6 +33,7 @@ video-work/
 # misc
 .DS_Store
 *.pem
+.serena/
 
 # debug
 npm-debug.log*
